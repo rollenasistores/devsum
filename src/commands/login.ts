@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { getVersion } from '../utils/version.js';
 
 const ASCII_LOGO = `
 ██████╗ ███████╗██╗   ██╗███████╗██╗   ██╗███╗   ███╗
@@ -32,7 +33,7 @@ const displayWelcome = () => {
   console.clear();
   console.log(chalk.cyan.bold(ASCII_LOGO));
   console.log(chalk.gray('                    Git Commit Report Generator'));
-  console.log(chalk.gray('                      Powered by AI • v1.0.0'));
+  console.log(chalk.gray(`                      Powered by AI • v${getVersion()}`));
   console.log(chalk.blue('═'.repeat(60)));
   console.log();
 };

@@ -11,6 +11,8 @@ export interface GitCommit {
   message: string;
   author: string;
   files: string[];
+  insertions?: number;  
+  deletions?: number; 
 }
 
 export interface ReportOptions {

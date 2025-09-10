@@ -123,8 +123,9 @@ DevSum supports multiple AI providers to fit your needs and budget:
 
 ### 🤖 **Google Gemini** *(Recommended for beginners)*
 - ✅ **Free tier available** (15 requests/minute)
-- ⚡ Fast processing with `gemini-1.5-flash`
-- 🧠 Detailed analysis with `gemini-1.5-pro`
+- ⚡ Fast processing with `gemini-2.0-flash`
+- 🧠 Detailed analysis with `gemini-2.0-pro`
+- 🧠 Detailed analysis with `gemini-2.5-flash`
 - 🔗 [Get API Key](https://aistudio.google.com/app/apikey)
 
 ### 🧠 **Anthropic Claude** *(Premium option)*

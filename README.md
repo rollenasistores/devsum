@@ -86,7 +86,7 @@ DevSum CLI is a powerful command-line tool that automatically generates professi
 
 ```bash
 # Install globally via npm
-npm install -g devsum
+npm install -g @rollenasistores/devsum
 
 # Or use with npx (no installation needed)
 npx devsum setup

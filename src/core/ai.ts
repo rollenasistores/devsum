@@ -1,36 +1,82 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import Anthropic from '@anthropic-ai/sdk';
 import { Config, GitCommit, AIResponse } from '../types/index.js';
 
 export class AIService {
-  private client: GoogleGenerativeAI;
+  private geminiClient?: GoogleGenerativeAI;
+  private claudeClient?: Anthropic;
 
   constructor(private config: Config) {
-    if (config.provider !== 'gemini') {
-      throw new Error('Only Gemini provider is currently supported');
+    if (config.provider === 'gemini') {
+      this.geminiClient = new GoogleGenerativeAI(config.apiKey);
+    } else if (config.provider === 'claude') {
+      this.claudeClient = new Anthropic({
+        apiKey: config.apiKey,
+      });
+    } else {
+      throw new Error(`Unsupported AI provider: ${config.provider}`);
     }
-    
-    this.client = new GoogleGenerativeAI(config.apiKey);
   }
 
   async generateReport(commits: GitCommit[]): Promise<AIResponse> {
     const prompt = this.buildPrompt(commits);
     
     try {
-      const model = this.client.getGenerativeModel({ 
-        model: this.config.model || 'gemini-1.5-flash'
-      });
-
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      return this.parseResponse(text);
+      if (this.config.provider === 'gemini') {
+        return await this.generateWithGemini(prompt);
+      } else if (this.config.provider === 'claude') {
+        return await this.generateWithClaude(prompt);
+      }
+      
+      throw new Error(`Unsupported provider: ${this.config.provider}`);
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`AI service error: ${error.message}`);
       }
       throw new Error('Unknown AI service error');
     }
+  }
+
+  private async generateWithGemini(prompt: string): Promise<AIResponse> {
+    if (!this.geminiClient) {
+      throw new Error('Gemini client not initialized');
+    }
+
+    const model = this.geminiClient.getGenerativeModel({ 
+      model: this.config.model || 'gemini-2.0-flash'
+    });
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    return this.parseResponse(text);
+  }
+
+  private async generateWithClaude(prompt: string): Promise<AIResponse> {
+    if (!this.claudeClient) {
+      throw new Error('Claude client not initialized');
+    }
+
+    const response = await this.claudeClient.messages.create({
+      model: this.config.model || 'claude-3-5-sonnet-20241022',
+      max_tokens: 4000,
+      temperature: 0.7,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    });
+
+    // Extract text from Claude's response
+    const text = response.content
+      .filter(block => block.type === 'text')
+      .map(block => (block as any).text)
+      .join('\n');
+
+    return this.parseResponse(text);
   }
 
   private buildPrompt(commits: GitCommit[]): string {
@@ -61,7 +107,6 @@ Focus on the impact and value of the changes rather than just listing commits. G
   }
 
   private parseResponse(response: string): AIResponse {
-    // Simple parsing - in production you might want more robust parsing
     const accomplishments: string[] = [];
     const lines = response.split('\n');
     
@@ -93,5 +138,33 @@ Focus on the impact and value of the changes rather than just listing commits. G
       summary: summary.trim() || 'Work completed during the specified period.',
       accomplishments: accomplishments.length > 0 ? accomplishments : ['Various development tasks completed'],
     };
+  }
+
+  // Helper method to get available models for the current provider
+  static getAvailableModels(provider: string): string[] {
+    if (provider === 'gemini') {
+      return [
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+        'gemini-1.5-pro'
+      ];
+    } else if (provider === 'claude') {
+      return [
+        'claude-3-5-sonnet-20241022',
+        'claude-3-5-haiku-20241022',
+        'claude-3-opus-20240229'
+      ];
+    }
+    return [];
+  }
+
+  // Helper method to get default model for a provider
+  static getDefaultModel(provider: string): string {
+    if (provider === 'gemini') {
+      return 'gemini-2.0-flash';
+    } else if (provider === 'claude') {
+      return 'claude-3-5-sonnet-20241022';
+    }
+    throw new Error(`Unknown provider: ${provider}`);
   }
 }

@@ -36,7 +36,7 @@ const displayProviderInfo = (provider: string) => {
     console.log();
     console.log(chalk.yellow('📋 Setup Requirements:'));
     console.log(chalk.gray('   • API Key: https://aistudio.google.com/app/apikey'));
-    console.log(chalk.gray('   • Models: gemini-1.5-flash (fast), gemini-1.5-pro (detailed)'));
+    console.log(chalk.gray('   • Models: gemini-2.0-flash (fast), gemini-2.5-pro (detailed), gemini-2.5-flash (detailed)'));
     console.log(chalk.gray('   • Free tier: 15 requests/minute'));
   } else if (provider === 'claude') {
     console.log(chalk.cyan.bold('🧠 Anthropic Claude Configuration'));
@@ -48,6 +48,41 @@ const displayProviderInfo = (provider: string) => {
     console.log(chalk.gray('   • Usage: Pay-per-use pricing'));
   }
   console.log();
+};
+
+const validateApiKey = (apiKey: string, provider: string): boolean | string => {
+  if (!apiKey.trim()) {
+    return '❌ API key is required';
+  }
+
+  if (provider === 'gemini') {
+    // Gemini API keys typically start with "AIza" and are 39 characters long
+    if (!apiKey.startsWith('AIza')) {
+      return '❌ Gemini API key should start with "AIza"';
+    }
+    if (apiKey.length !== 39) {
+      return '❌ Gemini API key should be exactly 39 characters long';
+    }
+    // Check for valid characters (alphanumeric, hyphens, underscores)
+    if (!/^[A-Za-z0-9_-]+$/.test(apiKey)) {
+      return '❌ Gemini API key contains invalid characters';
+    }
+  } else if (provider === 'claude') {
+    // Claude API keys typically start with "sk-ant-" and are longer
+    if (!apiKey.startsWith('sk-ant-')) {
+      return '❌ Claude API key should start with "sk-ant-"';
+    }
+    if (apiKey.length < 40) {
+      return '❌ Claude API key seems too short';
+    }
+  } else {
+    // Generic validation for other providers
+    if (apiKey.length < 10) {
+      return '❌ API key seems too short';
+    }
+  }
+
+  return true;
 };
 
 const displaySuccess = (config: Config) => {
@@ -145,15 +180,7 @@ export const setupCommand = new Command('setup')
           type: 'password',
           name: 'apiKey',
           message: '🔑 Enter your API key:',
-          validate: (input) => {
-            if (!input.trim()) {
-              return '❌ API key is required';
-            }
-            if (input.length < 10) {
-              return '❌ API key seems too short';
-            }
-            return true;
-          },
+          validate: (input) => validateApiKey(input, answers.provider),
         },
         {
           type: 'input',
@@ -172,7 +199,7 @@ export const setupCommand = new Command('setup')
           name: 'model',
           message: '⚙️  AI Model (press Enter for default):',
           default: (answers: any) => {
-            return answers.provider === 'gemini' ? 'gemini-1.5-flash' : 'claude-3-sonnet-20240229';
+            return answers.provider === 'gemini' ? 'claude-3-sonnet' : 'gemini-2.0-flash';
           },
         },
       ]);

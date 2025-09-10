@@ -331,7 +331,7 @@ npm run lint     # Check code style
 
 ## 📜 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSE) file for details.
 
 ## 🙋 Support
 
@@ -352,7 +352,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/devsum&type=Date)](https://star-history.com/#yourusername/devsum&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=rollenasistores/@rollenasistores-devsum&type=Date)](https://star-history.com/#rollenasistores/@rollenasistores-devsum&Date)
 
 ---
 

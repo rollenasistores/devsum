@@ -11,24 +11,19 @@ export class GitService {
   async getCommits(since?: string, until?: string, author?: string): Promise<GitCommit[]> {
     // Build git log command with raw arguments
     const args = ['log', '--max-count=100', '--pretty=format:%H|%ai|%s|%an <%ae>'];
-    
+
     if (since) {
-      // Handle relative dates (7d, 2w, 1m, etc.)
-      if (since.match(/^\d+[dwmy]$/)) {
-        args.push(`--since="${since}"`);
-      } else {
-        // Handle absolute dates
-        args.push(`--since="${since}"`);
-      }
+      // Handle relative dates (7d, 2w, 1m, etc.) and absolute dates
+      args.push('--since', since);
     }
     
     if (until) {
-      args.push(`--until="${until}"`);
+      args.push('--until', until);
     }
     
     if (author) {
       // Support partial author matching (case-insensitive)
-      args.push(`--author="${author}"`);
+      args.push('--author', author);
     }
 
     try {

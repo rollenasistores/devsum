@@ -125,7 +125,7 @@ const displayError = (error: unknown, context: string) => {
   console.log(chalk.gray('   • Verify internet connectivity'));
   console.log(chalk.gray('   • Run "devsum setup" to reconfigure'));
   console.log();
-  console.log(chalk.blue('For help: https://github.com/your-repo/devsum/issues'));
+  console.log(chalk.blue('For help: https://github.com/rollenasistores/devsum/issues'));
   console.log(chalk.red('═'.repeat(55)));
 };
 

@@ -1,5 +1,6 @@
-#!/usr/bin/env node
 
-import { program } from '../src/index.js';
+// bin/devsum
+import { runWithUpdateCheck } from '../src/index.js';
 
-program.parse();
+// Run the CLI with update checking
+runWithUpdateCheck();

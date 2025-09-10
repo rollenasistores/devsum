@@ -9,26 +9,42 @@ export class GitService {
   }
 
   async getCommits(since?: string, until?: string, author?: string): Promise<GitCommit[]> {
+    // Validate dates before using them
+    if (since && !this.isValidDate(since)) {
+      throw new Error(`Invalid 'since' date format: ${since}. Use YYYY-MM-DD or relative dates like 7d, 2w, 1m`);
+    }
+    
+    if (until && !this.isValidDate(until)) {
+      throw new Error(`Invalid 'until' date format: ${until}. Use YYYY-MM-DD format`);
+    }
+
     // Build git log command with raw arguments
     const args = ['log', '--max-count=100', '--pretty=format:%H|%ai|%s|%an <%ae>'];
 
     if (since) {
-      // Handle relative dates (7d, 2w, 1m, etc.) and absolute dates
-      args.push('--since', since);
+      // FIX: Use single argument format for git dates
+      args.push(`--since=${since}`);
     }
     
     if (until) {
-      args.push('--until', until);
+      // FIX: Use single argument format for git dates
+      args.push(`--until=${until}`);
     }
     
     if (author) {
-      // Support partial author matching (case-insensitive)
-      args.push('--author', author);
+      // FIX: Use single argument format for author
+      args.push(`--author=${author}`);
     }
 
     try {
       // Execute raw git command
       const result = await this.git.raw(args);
+      
+      // FIX: Handle empty result case
+      if (!result || !result.trim()) {
+        return [];
+      }
+      
       const lines = result.trim().split('\n').filter(line => line.trim());
       
       const commits: GitCommit[] = [];
@@ -41,51 +57,60 @@ export class GitService {
           const message = parts[2];
           const authorInfo = parts[3];
           
-          // Get file changes and stats for each commit
-          const show = await this.git.show([
-            hash,
-            '--name-only',
-            '--pretty=format:'
-          ]);
-          
-          const files = show.split('\n').filter(line => line.trim().length > 0);
-          
-          // Get commit stats (insertions/deletions)
-          let insertions = 0;
-          let deletions = 0;
-          
           try {
-            const stats = await this.git.raw([
-              'show',
-              '--format=',
-              '--numstat',
-              hash
+            // Get file changes and stats for each commit
+            const show = await this.git.show([
+              hash,
+              '--name-only',
+              '--pretty=format:'
             ]);
             
-            const statLines = stats.trim().split('\n').filter(line => line.trim());
-            for (const statLine of statLines) {
-              const [add, del] = statLine.split('\t');
-              if (add !== '-') insertions += parseInt(add) || 0;
-              if (del !== '-') deletions += parseInt(del) || 0;
+            const files = show.split('\n').filter(line => line.trim().length > 0);
+            
+            // Get commit stats (insertions/deletions)
+            let insertions = 0;
+            let deletions = 0;
+            
+            try {
+              const stats = await this.git.raw([
+                'show',
+                '--format=',
+                '--numstat',
+                hash
+              ]);
+              
+              const statLines = stats.trim().split('\n').filter(line => line.trim());
+              for (const statLine of statLines) {
+                const [add, del] = statLine.split('\t');
+                if (add !== '-') insertions += parseInt(add) || 0;
+                if (del !== '-') deletions += parseInt(del) || 0;
+              }
+            } catch (error) {
+              // Stats are optional, continue without them
             }
+            
+            commits.push({
+              hash,
+              date,
+              message,
+              author: authorInfo,
+              files,
+              insertions,
+              deletions,
+            });
           } catch (error) {
-            // Stats are optional, continue without them
+            // FIX: Skip commits that fail to process but continue with others
+            console.warn(`Warning: Failed to process commit ${hash}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           }
-          
-          commits.push({
-            hash,
-            date,
-            message,
-            author: authorInfo,
-            files,
-            insertions,
-            deletions,
-          });
         }
       }
 
       return commits;
     } catch (error) {
+      // FIX: Provide more helpful error messages
+      if (error instanceof Error && error.message.includes('bad revision')) {
+        throw new Error(`Invalid date range or no commits found for the specified criteria. Check your --since and --until dates.`);
+      }
       throw new Error(`Failed to get git commits: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -116,7 +141,8 @@ export class GitService {
       const args = ['log', '--pretty=format:%an <%ae>'];
       
       if (since) {
-        args.push(`--since="${since}"`);
+        // FIX: Use consistent argument format
+        args.push(`--since=${since}`);
       }
       
       const result = await this.git.raw(args);
@@ -187,7 +213,7 @@ export class GitService {
   }
 
   /**
-   * Validate if a date string is valid for git
+   * FIX: Enhanced date validation
    */
   isValidDate(dateString: string): boolean {
     // Check for relative dates like 7d, 2w, 1m, 3y
@@ -195,7 +221,18 @@ export class GitService {
       return true;
     }
     
-    // Check for absolute dates
+    // Check for "yesterday", "today", etc.
+    if (['yesterday', 'today', 'now'].includes(dateString.toLowerCase())) {
+      return true;
+    }
+    
+    // Check for ISO dates (YYYY-MM-DD)
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const date = new Date(dateString);
+      return !isNaN(date.getTime());
+    }
+    
+    // Check for other common date formats
     const date = new Date(dateString);
     return !isNaN(date.getTime());
   }

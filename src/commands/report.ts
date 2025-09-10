@@ -30,13 +30,32 @@ const displayProgress = (step: string, isComplete: boolean = false) => {
   console.log(color(`${icon} ${step}`));
 };
 
-const displayCommitStats = (commits: any[], branch: string) => {
+const displayCommitStats = (commits: any[], branch: string, filters?: {
+  since?: string;
+  until?: string;
+  author?: string;
+}) => {
   console.log();
   console.log(chalk.blue('═'.repeat(55)));
   console.log(chalk.cyan.bold('📊 Repository Analysis'));
   console.log();
   console.log(chalk.white(`🌿 Branch: ${chalk.yellow(branch)}`));
   console.log(chalk.white(`📝 Commits: ${chalk.green(commits.length)}`));
+  
+  // FIX: Show applied filters
+  if (filters?.since || filters?.until || filters?.author) {
+    console.log();
+    console.log(chalk.yellow('🔍 Applied Filters:'));
+    if (filters.since) {
+      console.log(chalk.gray(`   📅 Since: ${filters.since}`));
+    }
+    if (filters.until) {
+      console.log(chalk.gray(`   📅 Until: ${filters.until}`));
+    }
+    if (filters.author) {
+      console.log(chalk.gray(`   👤 Author: ${filters.author}`));
+    }
+  }
   
   // Calculate stats
   const authors = [...new Set(commits.map(c => c.author))];
@@ -45,6 +64,7 @@ const displayCommitStats = (commits: any[], branch: string) => {
     newest: commits[0].date.split('T')[0]
   } : null;
   
+  console.log();
   console.log(chalk.white(`👥 Authors: ${chalk.cyan(authors.length)}`));
   if (dateRange) {
     console.log(chalk.white(`📅 Period: ${chalk.gray(dateRange.oldest)} → ${chalk.gray(dateRange.newest)}`));
@@ -124,9 +144,35 @@ const displayError = (error: unknown, context: string) => {
   console.log(chalk.gray('   • Check your API key configuration'));
   console.log(chalk.gray('   • Verify internet connectivity'));
   console.log(chalk.gray('   • Run "devsum setup" to reconfigure'));
+  console.log(chalk.gray('   • Check date format (YYYY-MM-DD or 7d, 2w, 1m)'));
   console.log();
   console.log(chalk.blue('For help: https://github.com/rollenasistores/devsum/issues'));
   console.log(chalk.red('═'.repeat(55)));
+};
+
+// FIX: Enhanced validation helper
+const validateDateFilters = (since?: string, until?: string): string | null => {
+  const gitService = new GitService();
+  
+  if (since && !gitService.isValidDate(since)) {
+    return `Invalid --since date: "${since}". Use formats like: 7d, 2w, 1m, or YYYY-MM-DD`;
+  }
+  
+  if (until && !gitService.isValidDate(until)) {
+    return `Invalid --until date: "${until}". Use format: YYYY-MM-DD`;
+  }
+  
+  // Check logical date order for absolute dates
+  if (since && until) {
+    const sinceDate = new Date(since);
+    const untilDate = new Date(until);
+    
+    if (!isNaN(sinceDate.getTime()) && !isNaN(untilDate.getTime()) && sinceDate > untilDate) {
+      return `--since date (${since}) cannot be after --until date (${until})`;
+    }
+  }
+  
+  return null;
 };
 
 export const reportCommand = new Command('report')
@@ -143,6 +189,22 @@ export const reportCommand = new Command('report')
     try {
       if (!options.noHeader) {
         displayHeader();
+      }
+
+      // FIX: Validate date filters early
+      const dateError = validateDateFilters(options.since, options.until);
+      if (dateError) {
+        console.log();
+        console.error(chalk.red('❌ Invalid date filter'));
+        console.log(chalk.yellow(dateError));
+        console.log();
+        console.log(chalk.blue('💡 Valid date formats:'));
+        console.log(chalk.white('   --since 7d              '), chalk.gray('# Last 7 days'));
+        console.log(chalk.white('   --since 2w              '), chalk.gray('# Last 2 weeks'));
+        console.log(chalk.white('   --since 1m              '), chalk.gray('# Last 1 month'));
+        console.log(chalk.white('   --since 2024-01-01      '), chalk.gray('# Since specific date'));
+        console.log(chalk.white('   --until 2024-12-31      '), chalk.gray('# Until specific date'));
+        process.exit(1);
       }
 
       // Load configuration
@@ -188,13 +250,28 @@ export const reportCommand = new Command('report')
         console.log(chalk.white('  devsum report --since 30d    '), chalk.gray('# Last 30 days'));
         console.log(chalk.white('  devsum report --since 2025-01-01'), chalk.gray('# Since specific date'));
         console.log(chalk.white('  devsum report                '), chalk.gray('# All commits'));
+        
+        // FIX: Show current filters for debugging
+        if (options.since || options.until || options.author) {
+          console.log();
+          console.log(chalk.gray('Current filters applied:'));
+          if (options.since) console.log(chalk.gray(`  --since: ${options.since}`));
+          if (options.until) console.log(chalk.gray(`  --until: ${options.until}`));
+          if (options.author) console.log(chalk.gray(`  --author: ${options.author}`));
+        }
+        
         process.exit(0);
       }
 
       const branch = await gitService.getCurrentBranch();
       displayProgress(`Found ${commits.length} commits`, true);
       
-      displayCommitStats(commits, branch);
+      // FIX: Pass filters to display function
+      displayCommitStats(commits, branch, {
+        since: options.since,
+        until: options.until,
+        author: options.author
+      });
 
       // Generate AI report
       displayAIProgress(config.provider, config.model || 'default');
@@ -221,7 +298,12 @@ export const reportCommand = new Command('report')
             branch,
             period: options.since ? `${options.since}${options.until ? ` to ${options.until}` : ' to present'}` : 'All commits',
             commitsAnalyzed: commits.length,
-            author: options.author || 'All authors'
+            author: options.author || 'All authors',
+            filters: {
+              since: options.since,
+              until: options.until,
+              author: options.author
+            }
           },
           report,
           commits: commits.slice(0, 50) // Limit commits in JSON
@@ -268,11 +350,23 @@ function generateMarkdownReport(
 
   const authorFilter = metadata.author ? ` (Author: ${metadata.author})` : '';
 
+  // FIX: Better period description
+  let periodDescription = dateRange;
+  if (metadata.since && metadata.since.match(/^\d+[dwmy]$/)) {
+    const unit = metadata.since.slice(-1);
+    const num = metadata.since.slice(0, -1);
+    const unitName = unit === 'd' ? 'days' : unit === 'w' ? 'weeks' : unit === 'm' ? 'months' : 'years';
+    periodDescription = `Last ${num} ${unitName}`;
+    if (metadata.until) {
+      periodDescription += ` (until ${metadata.until})`;
+    }
+  }
+
   return `# 🚀 Development Accomplishment Report
 
 **Generated:** ${new Date(metadata.generatedAt).toLocaleString()}  
 **Branch:** \`${metadata.branch}\`  
-**Period:** ${dateRange}${authorFilter}  
+**Period:** ${periodDescription}${authorFilter}  
 **Commits Analyzed:** ${commits.length}
 
 ---
@@ -317,7 +411,13 @@ ${commits.length > 15 ? `📎 *... and ${commits.length - 15} more commits*\n\n`
 - **Authors:** ${[...new Set(commits.map(c => c.author))].length}
 - **Files Modified:** ${[...new Set(commits.flatMap(c => c.files))].length}
 - **Date Range:** ${commits.length > 0 ? `${commits[commits.length - 1].date.split('T')[0]} → ${commits[0].date.split('T')[0]}` : 'N/A'}
+${metadata.since || metadata.until || metadata.author ? `
+## 🔍 Applied Filters
 
+${metadata.since ? `- **Since:** ${metadata.since}` : ''}
+${metadata.until ? `- **Until:** ${metadata.until}` : ''}
+${metadata.author ? `- **Author:** ${metadata.author}` : ''}
+` : ''}
 ---
 
 <div align="center">

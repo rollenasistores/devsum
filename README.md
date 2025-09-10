@@ -311,7 +311,7 @@ DEBUG=devsum* devsum report --since 7d
 We welcome contributions! Here's how to get started:
 
 1. **Fork** the repository
-2. **Clone** your fork: `git clone https://github.com/yourusername/devsum.git`
+2. **Clone** your fork: `git clone https://github.com/rollenasistores/devsum.git`
 3. **Install** dependencies: `npm install`
 4. **Create** a feature branch: `git checkout -b feature/amazing-feature`
 5. **Make** your changes
@@ -335,8 +335,8 @@ This project is licensed under the **Apache License 2.0** - see the [LICENSE](LI
 
 ## 🙋 Support
 
-- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/yourusername/devsum/issues)
-- 💬 **Discussions:** [GitHub Discussions](https://github.com/yourusername/devsum/discussions)
+- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/rollenasistores/devsum/issues)
+- 💬 **Discussions:** [GitHub Discussions](https://github.com/rollenasistores/devsum/discussions)
 - 📧 **Email:** support@devsum.dev
 - 🐦 **Twitter:** [@devsum_cli](https://twitter.com/devsum_cli)
 

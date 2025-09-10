@@ -352,7 +352,7 @@ This project is licensed under the **Apache License 2.0** - see the [LICENSE](LI
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=rollenasistores/@rollenasistores-devsum&type=Date)](https://star-history.com/#rollenasistores/@rollenasistores-devsum&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=rollenasistores/devsum&type=Date)](https://star-history.com/#rollenasistores/devsum&Date)
 
 ---
 

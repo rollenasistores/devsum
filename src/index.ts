@@ -27,7 +27,7 @@ program.on('--help', () => {
   console.log(chalk.gray('  $ devsum login                    # View free mode info'));
   console.log('');
   console.log(chalk.blue('Documentation:'));
-  console.log(chalk.gray('  https://github.com/yourusername/devsum#readme'));
+  console.log(chalk.gray('  https://github.com/rollenasistores/devsum#readme'));
   console.log('');
 });
 

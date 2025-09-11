@@ -213,7 +213,7 @@ export class GitService {
   }
 
   /**
-   * FIX: Enhanced date validation
+   * FIX: Enhanced date validation with ISO timestamp support
    */
   isValidDate(dateString: string): boolean {
     // Check for relative dates like 7d, 2w, 1m, 3y
@@ -228,6 +228,12 @@ export class GitService {
     
     // Check for ISO dates (YYYY-MM-DD)
     if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const date = new Date(dateString);
+      return !isNaN(date.getTime());
+    }
+    
+    // Check for ISO timestamps (YYYY-MM-DDTHH:mm:ss.sssZ)
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/)) {
       const date = new Date(dateString);
       return !isNaN(date.getTime());
     }

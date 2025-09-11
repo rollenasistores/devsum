@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 
 // bin/devsum
 import { runWithUpdateCheck } from '../src/index.js';

@@ -42,15 +42,22 @@ const displayCommitStats = (commits: any[], branch: string, filters?: {
   console.log(chalk.white(`🌿 Branch: ${chalk.yellow(branch)}`));
   console.log(chalk.white(`📝 Commits: ${chalk.green(commits.length)}`));
   
-  // FIX: Show applied filters
+  // Show applied filters
   if (filters?.since || filters?.until || filters?.author) {
     console.log();
     console.log(chalk.yellow('🔍 Applied Filters:'));
     if (filters.since) {
-      console.log(chalk.gray(`   📅 Since: ${filters.since}`));
+      // Enhanced display for today filter
+      const displaySince = filters.since.toLowerCase() === 'today' 
+        ? `today (${new Date().toISOString().split('T')[0]} 00:00:00 to now)` 
+        : filters.since;
+      console.log(chalk.gray(`   📅 Since: ${displaySince}`));
     }
     if (filters.until) {
-      console.log(chalk.gray(`   📅 Until: ${filters.until}`));
+      const displayUntil = filters.until.toLowerCase() === 'today'
+        ? `today (${new Date().toISOString().split('T')[0]} 23:59:59)`
+        : filters.until;
+      console.log(chalk.gray(`   📅 Until: ${displayUntil}`));
     }
     if (filters.author) {
       console.log(chalk.gray(`   👤 Author: ${filters.author}`));
@@ -59,10 +66,25 @@ const displayCommitStats = (commits: any[], branch: string, filters?: {
   
   // Calculate stats
   const authors = [...new Set(commits.map(c => c.author))];
-  const dateRange = commits.length > 0 ? {
-    oldest: commits[commits.length - 1].date.split('T')[0],
-    newest: commits[0].date.split('T')[0]
-  } : null;
+  
+  // Show today's date range when using 'today'
+  let dateRange = null;
+  if (commits.length > 0) {
+    if (filters?.since?.toLowerCase() === 'today') {
+      const today = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0].substring(0, 8); // HH:MM:SS format
+      dateRange = {
+        oldest: `${today} 00:00:00`,
+        newest: `${today} ${timeStr}`
+      };
+    } else {
+      dateRange = {
+        oldest: commits[commits.length - 1].date.split('T')[0],
+        newest: commits[0].date.split('T')[0]
+      };
+    }
+  }
   
   console.log();
   console.log(chalk.white(`👥 Authors: ${chalk.cyan(authors.length)}`));
@@ -144,26 +166,31 @@ const displayError = (error: unknown, context: string) => {
   console.log(chalk.gray('   • Check your API key configuration'));
   console.log(chalk.gray('   • Verify internet connectivity'));
   console.log(chalk.gray('   • Run "devsum setup" to reconfigure'));
-  console.log(chalk.gray('   • Check date format (YYYY-MM-DD or 7d, 2w, 1m)'));
+  console.log(chalk.gray('   • Check date format (YYYY-MM-DD, today, or 7d, 2w, 1m)'));
   console.log();
   console.log(chalk.blue('For help: https://github.com/rollenasistores/devsum/issues'));
   console.log(chalk.red('═'.repeat(55)));
 };
 
-// FIX: Enhanced validation helper
+// Enhanced validation helper with today support
 const validateDateFilters = (since?: string, until?: string): string | null => {
   const gitService = new GitService();
   
+  // Handle 'today' keyword - it's always valid
+  if (since?.toLowerCase() === 'today' || until?.toLowerCase() === 'today') {
+    // 'today' is always valid, no need to validate further for this case
+  }
+  
   if (since && !gitService.isValidDate(since)) {
-    return `Invalid --since date: "${since}". Use formats like: 7d, 2w, 1m, or YYYY-MM-DD`;
+    return `Invalid --since date: "${since}". Use formats like: today, 7d, 2w, 1m, or YYYY-MM-DD`;
   }
   
   if (until && !gitService.isValidDate(until)) {
-    return `Invalid --until date: "${until}". Use format: YYYY-MM-DD`;
+    return `Invalid --until date: "${until}". Use format: YYYY-MM-DD or today`;
   }
   
-  // Check logical date order for absolute dates
-  if (since && until) {
+  // Check logical date order for absolute dates (skip if since/until is 'today')
+  if (since && since.toLowerCase() !== 'today' && until && until.toLowerCase() !== 'today') {
     const sinceDate = new Date(since);
     const untilDate = new Date(until);
     
@@ -172,26 +199,46 @@ const validateDateFilters = (since?: string, until?: string): string | null => {
     }
   }
   
+  // Check if 'today' with until makes sense
+  if (since?.toLowerCase() === 'today' && until && until.toLowerCase() !== 'today') {
+    const today = new Date().toISOString().split('T')[0];
+    const untilDate = new Date(until);
+    
+    if (!isNaN(untilDate.getTime()) && until < today) {
+      return `--until date (${until}) cannot be before today when using --since today`;
+    }
+  }
+  
   return null;
 };
 
 export const reportCommand = new Command('report')
   .description('Generate accomplishment report from git commits')
-  .option('-s, --since <date>', 'Include commits since this date (YYYY-MM-DD or relative like "7d")')
-  .option('-u, --until <date>', 'Include commits until this date (YYYY-MM-DD)')
+  .option('-s, --since <date>', 'Include commits since this date (YYYY-MM-DD, "today", or relative like "7d")')
+  .option('-u, --until <date>', 'Include commits until this date (YYYY-MM-DD or "today")')
   .option('-a, --author <name>', 'Filter commits by author name')
   .option('-o, --output <path>', 'Output file path')
   .option('-f, --format <format>', 'Output format (markdown|json|html)', 'markdown')
   .option('--no-header', 'Skip the fancy header display')
-  .action(async (options: ReportOptions & { noHeader?: boolean; author?: string }) => {
+  .option('--today', 'Shortcut for --since today (get commits from today only)')
+  .action(async (options: ReportOptions & { 
+    noHeader?: boolean; 
+    author?: string;
+    today?: boolean;
+  }) => {
     const startTime = Date.now();
     
     try {
+      // Handle --today shortcut
+      if (options.today) {
+        options.since = 'today';
+      }
+
       if (!options.noHeader) {
         displayHeader();
       }
 
-      // FIX: Validate date filters early
+      // Validate date filters early (before processing)
       const dateError = validateDateFilters(options.since, options.until);
       if (dateError) {
         console.log();
@@ -199,11 +246,14 @@ export const reportCommand = new Command('report')
         console.log(chalk.yellow(dateError));
         console.log();
         console.log(chalk.blue('💡 Valid date formats:'));
+        console.log(chalk.white('   --since today           '), chalk.gray('# All commits from today (00:00 to now)'));
+        console.log(chalk.white('   --today                 '), chalk.gray('# Shortcut for --since today'));
         console.log(chalk.white('   --since 7d              '), chalk.gray('# Last 7 days'));
         console.log(chalk.white('   --since 2w              '), chalk.gray('# Last 2 weeks'));
         console.log(chalk.white('   --since 1m              '), chalk.gray('# Last 1 month'));
         console.log(chalk.white('   --since 2024-01-01      '), chalk.gray('# Since specific date'));
         console.log(chalk.white('   --until 2024-12-31      '), chalk.gray('# Until specific date'));
+        console.log(chalk.white('   --until today           '), chalk.gray('# Until end of today'));
         process.exit(1);
       }
 
@@ -238,25 +288,37 @@ export const reportCommand = new Command('report')
       }
       displayProgress('Git repository verified', true);
 
-      // Get git commits
+      // Get git commits - GitService now handles 'today' processing internally
       displayProgress('Analyzing commit history...');
       const commits = await gitService.getCommits(options.since, options.until, options.author);
-      
+            
       if (commits.length === 0) {
         console.log();
         console.log(chalk.yellow('⚠️  No commits found matching your criteria'));
         console.log();
         console.log(chalk.blue('💡 Try adjusting your filters:'));
-        console.log(chalk.white('  devsum report --since 30d    '), chalk.gray('# Last 30 days'));
-        console.log(chalk.white('  devsum report --since 2025-01-01'), chalk.gray('# Since specific date'));
-        console.log(chalk.white('  devsum report                '), chalk.gray('# All commits'));
+        console.log(chalk.white('  devsum report --today            '), chalk.gray('# All commits from today only'));
+        console.log(chalk.white('  devsum report --since today      '), chalk.gray('# All commits from today (00:00 to now)'));
+        console.log(chalk.white('  devsum report --since 30d        '), chalk.gray('# Last 30 days'));
+        console.log(chalk.white('  devsum report --since 2025-01-01 '), chalk.gray('# Since specific date'));
+        console.log(chalk.white('  devsum report                    '), chalk.gray('# All commits'));
         
-        // FIX: Show current filters for debugging
+        // Show current filters for debugging
         if (options.since || options.until || options.author) {
           console.log();
           console.log(chalk.gray('Current filters applied:'));
-          if (options.since) console.log(chalk.gray(`  --since: ${options.since}`));
-          if (options.until) console.log(chalk.gray(`  --until: ${options.until}`));
+          if (options.since) {
+            const displaySince = options.since.toLowerCase() === 'today' 
+              ? `today (${new Date().toISOString().split('T')[0]} 00:00:00 to now)`
+              : options.since;
+            console.log(chalk.gray(`  --since: ${displaySince}`));
+          }
+          if (options.until) {
+            const displayUntil = options.until.toLowerCase() === 'today'
+              ? `today (until ${new Date().toISOString().split('T')[0]} 23:59:59)`
+              : options.until;
+            console.log(chalk.gray(`  --until: ${displayUntil}`));
+          }
           if (options.author) console.log(chalk.gray(`  --author: ${options.author}`));
         }
         
@@ -266,7 +328,7 @@ export const reportCommand = new Command('report')
       const branch = await gitService.getCurrentBranch();
       displayProgress(`Found ${commits.length} commits`, true);
       
-      // FIX: Pass filters to display function
+      // Pass filters to display function
       displayCommitStats(commits, branch, {
         since: options.since,
         until: options.until,
@@ -350,9 +412,20 @@ function generateMarkdownReport(
 
   const authorFilter = metadata.author ? ` (Author: ${metadata.author})` : '';
 
-  // FIX: Better period description
+  // Enhanced period description with today support
   let periodDescription = dateRange;
-  if (metadata.since && metadata.since.match(/^\d+[dwmy]$/)) {
+  if (metadata.since?.toLowerCase() === 'today') {
+    const now = new Date();
+    const timeStr = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MM format
+    const todayDate = new Date().toISOString().split('T')[0];
+    periodDescription = `Today (${todayDate} 00:00:00 to ${timeStr})`;
+    if (metadata.until) {
+      periodDescription += ` (until ${metadata.until})`;
+    }
+  } else if (metadata.until?.toLowerCase() === 'today') {
+    const todayDate = new Date().toISOString().split('T')[0];
+    periodDescription = dateRange.replace('today', `today (until ${todayDate} 23:59:59)`);
+  } else if (metadata.since && metadata.since.match(/^\d+[dwmy]$/)) {
     const unit = metadata.since.slice(-1);
     const num = metadata.since.slice(0, -1);
     const unitName = unit === 'd' ? 'days' : unit === 'w' ? 'weeks' : unit === 'm' ? 'months' : 'years';
@@ -414,8 +487,8 @@ ${commits.length > 15 ? `📎 *... and ${commits.length - 15} more commits*\n\n`
 ${metadata.since || metadata.until || metadata.author ? `
 ## 🔍 Applied Filters
 
-${metadata.since ? `- **Since:** ${metadata.since}` : ''}
-${metadata.until ? `- **Until:** ${metadata.until}` : ''}
+${metadata.since ? `- **Since:** ${metadata.since.toLowerCase() === 'today' ? `today (${new Date().toISOString().split('T')[0]} 00:00:00 to now)` : metadata.since}` : ''}
+${metadata.until ? `- **Until:** ${metadata.until.toLowerCase() === 'today' ? `today (${new Date().toISOString().split('T')[0]} 23:59:59)` : metadata.until}` : ''}
 ${metadata.author ? `- **Author:** ${metadata.author}` : ''}
 ` : ''}
 ---

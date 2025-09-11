@@ -1,12 +1,8 @@
-// src/core/updateChecker.ts
+// src/core/updateChecker.ts - Windows-safe version
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import os from 'os';
 import chalk from 'chalk';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 interface UpdateInfo {
   lastChecked: string;
@@ -34,13 +30,31 @@ export class UpdateChecker {
   constructor(packageName: string, currentVersion: string) {
     this.packageName = packageName;
     this.currentVersion = currentVersion;
-    this.updateFile = path.join(process.env.HOME || process.env.USERPROFILE || '/tmp', '.devsum-update-check');
+    
+    // Windows-safe path handling
+    const homeDir = os.homedir();
+    this.updateFile = path.join(homeDir, '.devsum-update-check');
   }
 
   /**
-   * Check for updates (non-blocking, cached)
+   * Check for updates (non-blocking, cached) - Windows safe
    */
   async checkForUpdates(): Promise<UpdateInfo | null> {
+    // On Windows, be extra careful with async operations
+    try {
+      const updateInfo = await Promise.race([
+        this.performUpdateCheck(),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)) // 5s timeout
+      ]);
+      
+      return updateInfo;
+    } catch (error) {
+      // Completely silent failure on Windows to avoid console issues
+      return null;
+    }
+  }
+
+  private async performUpdateCheck(): Promise<UpdateInfo | null> {
     try {
       const updateInfo = await this.getUpdateInfo();
       
@@ -53,7 +67,7 @@ export class UpdateChecker {
         return updateInfo;
       }
 
-      // Fetch latest version from npm (with timeout)
+      // Fetch latest version from npm (with shorter timeout for Windows)
       const latestVersion = await this.fetchLatestVersion();
       
       const newUpdateInfo: UpdateInfo = {
@@ -63,39 +77,45 @@ export class UpdateChecker {
         hasUpdate: this.isNewerVersion(latestVersion, this.currentVersion)
       };
 
-      // Save update info (don't await to avoid blocking)
-      this.saveUpdateInfo(newUpdateInfo).catch(() => {});
+      // Save update info (completely fire-and-forget)
+      setImmediate(() => {
+        this.saveUpdateInfo(newUpdateInfo).catch(() => {});
+      });
       
       return newUpdateInfo;
     } catch (error) {
-      // Fail silently for update checks
       return null;
     }
   }
 
   /**
-   * Display update notification if available
+   * Display update notification if available - Windows safe
    */
   static displayUpdateNotification(updateInfo: UpdateInfo | null) {
-    if (!updateInfo?.hasUpdate || !updateInfo.latestVersion) {
+    // Add process.stdout check for Windows
+    if (!updateInfo?.hasUpdate || !updateInfo.latestVersion || !process.stdout.isTTY) {
       return;
     }
 
-    console.log();
-    console.log(chalk.yellow('┌' + '─'.repeat(58) + '┐'));
-    console.log(chalk.yellow('│') + chalk.bold.cyan('  🚀 DevSum Update Available!') + ' '.repeat(28) + chalk.yellow('│'));
-    console.log(chalk.yellow('│') + ' '.repeat(58) + chalk.yellow('│'));
-    console.log(chalk.yellow('│') + `  Current: ${chalk.red(updateInfo.currentVersion)}` + ' '.repeat(58 - `  Current: ${updateInfo.currentVersion}`.length) + chalk.yellow('│'));
-    console.log(chalk.yellow('│') + `  Latest:  ${chalk.green(updateInfo.latestVersion)}` + ' '.repeat(58 - `  Latest:  ${updateInfo.latestVersion}`.length) + chalk.yellow('│'));
-    console.log(chalk.yellow('│') + ' '.repeat(58) + chalk.yellow('│'));
-    console.log(chalk.yellow('│') + chalk.white('  Update now: ') + chalk.cyan('npm install -g devsum') + ' '.repeat(16) + chalk.yellow('│'));
-    console.log(chalk.yellow('│') + chalk.gray('  Release notes: https://github.com/your-org/devsum/releases') + ' '.repeat(1) + chalk.yellow('│'));
-    console.log(chalk.yellow('└' + '─'.repeat(58) + '┘'));
-    console.log();
+    try {
+      console.log();
+      console.log(chalk.yellow('┌' + '─'.repeat(58) + '┐'));
+      console.log(chalk.yellow('│') + chalk.bold.cyan('  🚀 DevSum Update Available!') + ' '.repeat(28) + chalk.yellow('│'));
+      console.log(chalk.yellow('│') + ' '.repeat(58) + chalk.yellow('│'));
+      console.log(chalk.yellow('│') + `  Current: ${chalk.red(updateInfo.currentVersion)}` + ' '.repeat(58 - `  Current: ${updateInfo.currentVersion}`.length) + chalk.yellow('│'));
+      console.log(chalk.yellow('│') + `  Latest:  ${chalk.green(updateInfo.latestVersion)}` + ' '.repeat(58 - `  Latest:  ${updateInfo.latestVersion}`.length) + chalk.yellow('│'));
+      console.log(chalk.yellow('│') + ' '.repeat(58) + chalk.yellow('│'));
+      console.log(chalk.yellow('│') + chalk.white('  Update now: ') + chalk.cyan('npm install -g devsum') + ' '.repeat(16) + chalk.yellow('│'));
+      console.log(chalk.yellow('│') + chalk.gray('  Release notes: https://github.com/your-org/devsum/releases') + ' '.repeat(1) + chalk.yellow('│'));
+      console.log(chalk.yellow('└' + '─'.repeat(58) + '┘'));
+      console.log();
+    } catch (error) {
+      // Silent fail on Windows console issues
+    }
   }
 
   /**
-   * Get cached update info
+   * Get cached update info - Windows safe
    */
   private async getUpdateInfo(): Promise<UpdateInfo> {
     try {
@@ -110,24 +130,29 @@ export class UpdateChecker {
   }
 
   /**
-   * Save update info to cache
+   * Save update info to cache - Windows safe
    */
   private async saveUpdateInfo(updateInfo: UpdateInfo): Promise<void> {
     try {
       await fs.writeFile(this.updateFile, JSON.stringify(updateInfo, null, 2));
     } catch {
-      // Fail silently
+      // Fail silently - file system issues on Windows
     }
   }
 
   /**
-   * Fetch latest version from npm registry
+   * Fetch latest version from npm registry - Windows optimized
    */
   private async fetchLatestVersion(): Promise<string> {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+    const timeout = setTimeout(() => controller.abort(), 2000); // Shorter timeout for Windows
 
     try {
+      // Use Node.js fetch if available, otherwise skip
+      if (typeof fetch === 'undefined') {
+        throw new Error('Fetch not available');
+      }
+
       const response = await fetch(`https://registry.npmjs.org/${this.packageName}`, {
         signal: controller.signal,
         headers: {
@@ -176,7 +201,7 @@ export class UpdateChecker {
   }
 
   /**
-   * Force check for updates (for update command)
+   * Force check for updates (for update command) - Windows safe
    */
   async forceCheckForUpdates(): Promise<UpdateInfo> {
     try {

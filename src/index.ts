@@ -1,4 +1,4 @@
-// src/cli.ts (your main file)
+// src/index.ts
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { setupCommand } from './commands/setup.js';
@@ -65,7 +65,7 @@ program.on('command:*', (operands) => {
 });
 
 // Enhanced program execution with update notifications
-async function runWithUpdateCheck() {
+export async function runWithUpdateCheck() {
   try {
     // Check for updates in background (non-blocking)
     const updatePromise = updateChecker.checkForUpdates().catch(() => null);
@@ -99,4 +99,9 @@ async function runWithUpdateCheck() {
   }
 }
 
-export { program, runWithUpdateCheck };
+export { program };
+
+// If this file is run directly (not imported), run the CLI
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runWithUpdateCheck();
+}

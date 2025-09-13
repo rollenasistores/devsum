@@ -372,8 +372,11 @@ export const reportCommand = new Command('report')
       const report = await aiService.generateReport(commits, options.length);
       displayProgress('AI analysis complete', true);
 
-      // Prepare output
-      const timestamp = new Date().toISOString().split('T')[0];
+      // Prepare output with full timestamp
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+      const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
+      const timestamp = `${dateStr}_${timeStr}`;
       const defaultName = `report-${timestamp}.${options.format === 'json' ? 'json' : 'md'}`;
       const outputPath = options.output || path.join(config.defaultOutput, defaultName);
 

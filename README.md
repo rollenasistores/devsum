@@ -90,6 +90,7 @@ DevSum CLI is a powerful command-line tool that automatically generates professi
 - Comprehensive error handling
 - Offline configuration
 - Multiple AI provider support
+- Timestamped reports (no overwrites)
 
 </td>
 <td>
@@ -248,14 +249,14 @@ devsum report --since today     # Same as --today
 
 ### 📁 Output Structure
 
-Reports are saved to `./reports/` by default (configurable):
+Reports are saved to `./reports/` by default (configurable). Each report includes a timestamp to prevent overwrites:
 
 ```
 reports/
-├── report-2025-09-13.md      # Today's detailed report
-├── report-2025-09-12-short.md # Yesterday's short report
-├── report-2025-09-11-light.md # Light report
-└── team-sprint-report.md     # Custom named report
+├── report-2025-09-13_14-30-45.md      # Today's detailed report (with timestamp)
+├── report-2025-09-13_09-15-22-short.md # Short report from this morning
+├── report-2025-09-12_16-45-10-light.md # Light report from yesterday
+└── team-sprint-report.md               # Custom named report
 ```
 
 ## 💡 Examples

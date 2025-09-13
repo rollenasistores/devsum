@@ -1,8 +1,11 @@
 export interface Config {
-  provider: 'claude' | 'openai' | 'gemini';
+  provider: 'claude' | 'openai' | 'gemini' | 'devsum-api';
   apiKey: string;
   defaultOutput: string;
   model?: string;
+  // DevSum API configuration
+  devsumApiUrl?: string;
+  devsumToken?: string;
 }
 
 export interface GitCommit {
@@ -11,8 +14,8 @@ export interface GitCommit {
   message: string;
   author: string;
   files: string[];
-  insertions?: number;  
-  deletions?: number; 
+  insertions?: number;
+  deletions?: number;
 }
 
 export interface ReportOptions {

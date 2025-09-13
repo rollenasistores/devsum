@@ -106,7 +106,7 @@ export class UpdateChecker {
       console.log(chalk.yellow('│') + `  Latest:  ${chalk.green(updateInfo.latestVersion)}` + ' '.repeat(58 - `  Latest:  ${updateInfo.latestVersion}`.length) + chalk.yellow('│'));
       console.log(chalk.yellow('│') + ' '.repeat(58) + chalk.yellow('│'));
       console.log(chalk.yellow('│') + chalk.white('  Update now: ') + chalk.cyan('npm install -g devsum') + ' '.repeat(16) + chalk.yellow('│'));
-      console.log(chalk.yellow('│') + chalk.gray('  Release notes: https://github.com/your-org/devsum/releases') + ' '.repeat(1) + chalk.yellow('│'));
+      console.log(chalk.yellow('│') + chalk.gray('  Release notes: https://github.com/rollenasistores/devsum/releases') + ' '.repeat(1) + chalk.yellow('│'));
       console.log(chalk.yellow('└' + '─'.repeat(58) + '┘'));
       console.log();
     } catch (error) {

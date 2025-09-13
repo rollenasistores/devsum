@@ -1,10 +1,12 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Anthropic from '@anthropic-ai/sdk';
 import { Config, GitCommit, AIResponse } from '../types/index.js';
+import { DevSumApiService } from './api.js';
 
 export class AIService {
   private geminiClient?: GoogleGenerativeAI;
   private claudeClient?: Anthropic;
+  private devsumApiService?: DevSumApiService;
 
   constructor(private config: Config) {
     if (config.provider === 'gemini') {
@@ -13,22 +15,28 @@ export class AIService {
       this.claudeClient = new Anthropic({
         apiKey: config.apiKey,
       });
+    } else if (config.provider === 'devsum-api') {
+      this.devsumApiService = new DevSumApiService(config);
     } else {
       throw new Error(`Unsupported AI provider: ${config.provider}`);
     }
   }
 
   async generateReport(commits: GitCommit[]): Promise<AIResponse> {
-    const prompt = this.buildPrompt(commits);
-    
     try {
-      if (this.config.provider === 'gemini') {
-        return await this.generateWithGemini(prompt);
-      } else if (this.config.provider === 'claude') {
-        return await this.generateWithClaude(prompt);
+      if (this.config.provider === 'devsum-api') {
+        return await this.generateWithDevSumApi(commits);
+      } else {
+        const prompt = this.buildPrompt(commits);
+
+        if (this.config.provider === 'gemini') {
+          return await this.generateWithGemini(prompt);
+        } else if (this.config.provider === 'claude') {
+          return await this.generateWithClaude(prompt);
+        }
+
+        throw new Error(`Unsupported provider: ${this.config.provider}`);
       }
-      
-      throw new Error(`Unsupported provider: ${this.config.provider}`);
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`AI service error: ${error.message}`);
@@ -42,7 +50,7 @@ export class AIService {
       throw new Error('Gemini client not initialized');
     }
 
-    const model = this.geminiClient.getGenerativeModel({ 
+    const model = this.geminiClient.getGenerativeModel({
       model: this.config.model || 'gemini-2.0-flash'
     });
 
@@ -79,8 +87,16 @@ export class AIService {
     return this.parseResponse(text);
   }
 
+  private async generateWithDevSumApi(commits: GitCommit[]): Promise<AIResponse> {
+    if (!this.devsumApiService) {
+      throw new Error('DevSum API service not initialized');
+    }
+
+    return await this.devsumApiService.generateReport(commits);
+  }
+
   private buildPrompt(commits: GitCommit[]): string {
-    const commitSummaries = commits.map(commit => 
+    const commitSummaries = commits.map(commit =>
       `- ${commit.date.split('T')[0]} | ${commit.message} | Files: ${commit.files.slice(0, 3).join(', ')}${commit.files.length > 3 ? '...' : ''}`
     ).join('\n');
 
@@ -109,31 +125,31 @@ Focus on the impact and value of the changes rather than just listing commits. G
   private parseResponse(response: string): AIResponse {
     const accomplishments: string[] = [];
     const lines = response.split('\n');
-    
+
     let inAccomplishments = false;
     let summary = '';
-    
+
     for (const line of lines) {
       const trimmedLine = line.trim();
-      
+
       if (trimmedLine.toLowerCase().includes('summary:')) {
         inAccomplishments = false;
         continue;
       }
-      
-      if (trimmedLine.toLowerCase().includes('accomplishments:') || 
-          trimmedLine.toLowerCase().includes('highlights:')) {
+
+      if (trimmedLine.toLowerCase().includes('accomplishments:') ||
+        trimmedLine.toLowerCase().includes('highlights:')) {
         inAccomplishments = true;
         continue;
       }
-      
+
       if (inAccomplishments && trimmedLine.startsWith('-')) {
         accomplishments.push(trimmedLine.substring(1).trim());
       } else if (!inAccomplishments && trimmedLine && !trimmedLine.startsWith('**')) {
         summary += trimmedLine + ' ';
       }
     }
-    
+
     return {
       summary: summary.trim() || 'Work completed during the specified period.',
       accomplishments: accomplishments.length > 0 ? accomplishments : ['Various development tasks completed'],
@@ -154,6 +170,8 @@ Focus on the impact and value of the changes rather than just listing commits. G
         'claude-3-5-haiku-20241022',
         'claude-3-opus-20240229'
       ];
+    } else if (provider === 'devsum-api') {
+      return ['devsum-gemini']; // DevSum API uses Gemini internally
     }
     return [];
   }
@@ -164,6 +182,8 @@ Focus on the impact and value of the changes rather than just listing commits. G
       return 'gemini-2.0-flash';
     } else if (provider === 'claude') {
       return 'claude-3-5-sonnet-20241022';
+    } else if (provider === 'devsum-api') {
+      return 'devsum-gemini';
     }
     throw new Error(`Unknown provider: ${provider}`);
   }

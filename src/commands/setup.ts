@@ -29,7 +29,7 @@ const displayWelcome = () => {
 const displayProviderInfo = (provider: string) => {
   console.log();
   console.log(chalk.blue('═'.repeat(60)));
-  
+
   if (provider === 'gemini') {
     console.log(chalk.cyan.bold('🤖 Google Gemini Configuration'));
     console.log(chalk.gray('   Fast, efficient AI for code analysis'));
@@ -46,11 +46,25 @@ const displayProviderInfo = (provider: string) => {
     console.log(chalk.gray('   • API Key: https://console.anthropic.com/'));
     console.log(chalk.gray('   • Models: claude-3-sonnet (balanced), claude-3-opus (premium)'));
     console.log(chalk.gray('   • Usage: Pay-per-use pricing'));
+  } else if (provider === 'devsum-api') {
+    console.log(chalk.magenta.bold('🚀 DevSum API Configuration'));
+    console.log(chalk.gray('   Use DevSum API with persistent authentication'));
+    console.log();
+    console.log(chalk.yellow('📋 Setup Requirements:'));
+    console.log(chalk.gray('   • No API key needed - use devsum auth command'));
+    console.log(chalk.gray('   • Persistent token that never expires'));
+    console.log(chalk.gray('   • Powered by Gemini AI'));
+    console.log(chalk.gray('   • Free to use with DevSum account'));
   }
   console.log();
 };
 
 const validateApiKey = (apiKey: string, provider: string): boolean | string => {
+  if (provider === 'devsum-api') {
+    // DevSum API doesn't need an API key here - it will be handled by auth command
+    return true;
+  }
+
   if (!apiKey.trim()) {
     return '❌ API key is required';
   }
@@ -96,14 +110,22 @@ const displaySuccess = (config: Config) => {
   console.log(chalk.gray(`   Output: ${config.defaultOutput}`));
   console.log(chalk.gray(`   Config: ${configManager.getConfigPath()}`));
   console.log();
-  
+
   console.log(chalk.yellow('🚀 Quick Start Commands:'));
-  console.log(chalk.cyan('   devsum report --since 7d          '), chalk.gray('# Last 7 days'));
-  console.log(chalk.cyan('   devsum report --since 2025-09-01  '), chalk.gray('# Since specific date'));
-  console.log(chalk.cyan('   devsum report --author "John Doe" '), chalk.gray('# Specific author'));
-  console.log(chalk.cyan('   devsum report --format json       '), chalk.gray('# JSON output'));
+  if (config.provider === 'devsum-api') {
+    console.log(chalk.cyan('   devsum auth                       '), chalk.gray('# Authenticate with DevSum API'));
+    console.log(chalk.cyan('   devsum report --since 7d          '), chalk.gray('# Last 7 days'));
+    console.log(chalk.cyan('   devsum report --since 2025-09-01  '), chalk.gray('# Since specific date'));
+    console.log(chalk.cyan('   devsum report --author "John Doe" '), chalk.gray('# Specific author'));
+    console.log(chalk.cyan('   devsum report --format json       '), chalk.gray('# JSON output'));
+  } else {
+    console.log(chalk.cyan('   devsum report --since 7d          '), chalk.gray('# Last 7 days'));
+    console.log(chalk.cyan('   devsum report --since 2025-09-01  '), chalk.gray('# Since specific date'));
+    console.log(chalk.cyan('   devsum report --author "John Doe" '), chalk.gray('# Specific author'));
+    console.log(chalk.cyan('   devsum report --format json       '), chalk.gray('# JSON output'));
+  }
   console.log();
-  
+
   console.log(chalk.green('🎉 You\'re all set! Happy coding!'));
   console.log(chalk.blue('═'.repeat(60)));
 };
@@ -131,7 +153,7 @@ export const setupCommand = new Command('setup')
       displayWelcome();
 
       const existingConfig = await configManager.loadConfig();
-      
+
       if (existingConfig) {
         console.log(chalk.yellow('⚠️  Configuration Detected'));
         console.log(chalk.gray(`   Found existing config: ${configManager.getConfigPath()}`));
@@ -160,13 +182,17 @@ export const setupCommand = new Command('setup')
           name: 'provider',
           message: '🤖 Choose your AI provider:',
           choices: [
-            { 
-              name: chalk.cyan('🤖 Gemini (Google)') + chalk.gray(' - Fast & Free tier available'), 
-              value: 'gemini' 
+            {
+              name: chalk.cyan('🤖 Gemini (Google)') + chalk.gray(' - Fast & Free tier available'),
+              value: 'gemini'
             },
-            { 
-              name: chalk.blue('🧠 Claude (Anthropic)') + chalk.gray(' - Advanced reasoning'), 
-              value: 'claude' 
+            {
+              name: chalk.blue('🧠 Claude (Anthropic)') + chalk.gray(' - Advanced reasoning'),
+              value: 'claude'
+            },
+            {
+              name: chalk.magenta('🚀 DevSum API') + chalk.gray(' - Persistent auth, no API key needed'),
+              value: 'devsum-api'
             },
           ],
           default: 'gemini',
@@ -175,48 +201,87 @@ export const setupCommand = new Command('setup')
 
       displayProviderInfo(answers.provider);
 
-      const configAnswers = await inquirer.prompt([
-        {
-          type: 'password',
-          name: 'apiKey',
-          message: '🔑 Enter your API key:',
-          validate: (input) => validateApiKey(input, answers.provider),
-        },
-        {
-          type: 'input',
-          name: 'defaultOutput',
-          message: '📁 Default output directory:',
-          default: './reports',
-          validate: (input) => {
-            if (!input.trim()) {
-              return '❌ Output directory is required';
-            }
-            return true;
+      let configAnswers: any = {};
+
+      if (answers.provider === 'devsum-api') {
+        // For DevSum API, we don't need API key input
+        configAnswers = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'apiUrl',
+            message: '🌐 DevSum API URL:',
+            default: 'http://localhost:8000/api',
+            validate: (input) => {
+              if (!input.trim()) {
+                return '❌ API URL is required';
+              }
+              return true;
+            },
           },
-        },
-        {
-          type: 'input',
-          name: 'model',
-          message: '⚙️  AI Model (press Enter for default):',
-          default: (answers: any) => {
-            return answers.provider === 'gemini' ? 'claude-3-sonnet' : 'gemini-2.0-flash';
+          {
+            type: 'input',
+            name: 'defaultOutput',
+            message: '📁 Default output directory:',
+            default: './reports',
+            validate: (input) => {
+              if (!input.trim()) {
+                return '❌ Output directory is required';
+              }
+              return true;
+            },
           },
-        },
-      ]);
+        ]);
+        configAnswers.apiKey = ''; // Will be set by auth command
+        configAnswers.model = 'devsum-gemini';
+      } else {
+        // For other providers, ask for API key
+        configAnswers = await inquirer.prompt([
+          {
+            type: 'password',
+            name: 'apiKey',
+            message: '🔑 Enter your API key:',
+            validate: (input) => validateApiKey(input, answers.provider),
+          },
+          {
+            type: 'input',
+            name: 'defaultOutput',
+            message: '📁 Default output directory:',
+            default: './reports',
+            validate: (input) => {
+              if (!input.trim()) {
+                return '❌ Output directory is required';
+              }
+              return true;
+            },
+          },
+          {
+            type: 'input',
+            name: 'model',
+            message: '⚙️  AI Model (press Enter for default):',
+            default: (answers: any) => {
+              return answers.provider === 'gemini' ? 'gemini-2.0-flash' : 'claude-3-5-sonnet-20241022';
+            },
+          },
+        ]);
+      }
 
       const config: Config = {
         provider: answers.provider,
         apiKey: configAnswers.apiKey,
         defaultOutput: configAnswers.defaultOutput,
         ...(configAnswers.model && { model: configAnswers.model }),
+        ...(answers.provider === 'devsum-api' && {
+          devsumApiUrl: configAnswers.apiUrl,
+          devsumToken: '' // Will be set by auth command
+        }),
       };
 
       // Show loading animation
       console.log();
       console.log(chalk.blue('💾 Saving configuration...'));
-      
+
       await configManager.saveConfig(config);
-      
+
       displaySuccess(config);
 
     } catch (error) {

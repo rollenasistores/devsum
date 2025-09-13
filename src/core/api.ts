@@ -17,7 +17,7 @@ export class DevSumApiService {
     private token: string;
 
     constructor(config: Config) {
-        this.baseUrl = config.devsumApiUrl || 'http://localhost:8000/api';
+        this.baseUrl = config.devsumApiUrl || 'https://api-devsum.rollenasistores.site/api';
         this.token = config.devsumToken || '';
     }
 
@@ -25,51 +25,69 @@ export class DevSumApiService {
      * Register a new user with DevSum API
      */
     async register(name: string, email: string, password: string): Promise<DevSumApiResponse> {
-        const response = await fetch(`${this.baseUrl}/auth/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-                name,
-                email,
-                password,
-            }),
-        });
+        try {
+            console.log(`🔗 Connecting to: ${this.baseUrl}/auth/register`);
 
-        const data = await response.json();
+            const response = await fetch(`${this.baseUrl}/auth/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    name,
+                    email,
+                    password,
+                }),
+            });
 
-        if (!response.ok) {
-            throw new Error(data.message || 'Registration failed');
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || `Registration failed (${response.status})`);
+            }
+
+            return data;
+        } catch (error) {
+            if (error instanceof TypeError && error.message.includes('fetch')) {
+                throw new Error(`Failed to connect to DevSum API at ${this.baseUrl}. Please check if the server is running.`);
+            }
+            throw error;
         }
-
-        return data;
     }
 
     /**
      * Login user with DevSum API
      */
     async login(email: string, password: string): Promise<DevSumApiResponse> {
-        const response = await fetch(`${this.baseUrl}/auth/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-                email,
-                password,
-            }),
-        });
+        try {
+            console.log(`🔗 Connecting to: ${this.baseUrl}/auth/login`);
 
-        const data = await response.json();
+            const response = await fetch(`${this.baseUrl}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                }),
+            });
 
-        if (!response.ok) {
-            throw new Error(data.message || 'Login failed');
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || `Login failed (${response.status})`);
+            }
+
+            return data;
+        } catch (error) {
+            if (error instanceof TypeError && error.message.includes('fetch')) {
+                throw new Error(`Failed to connect to DevSum API at ${this.baseUrl}. Please check if the server is running.`);
+            }
+            throw error;
         }
-
-        return data;
     }
 
     /**
@@ -138,7 +156,7 @@ export class DevSumApiService {
     /**
      * Generate AI report using DevSum API
      */
-    async generateReport(commits: GitCommit[]): Promise<AIResponse> {
+    async generateReport(commits: GitCommit[], length?: 'short' | 'light' | 'detailed'): Promise<AIResponse> {
         const response = await fetch(`${this.baseUrl}/ai/generate-report`, {
             method: 'POST',
             headers: {
@@ -148,15 +166,24 @@ export class DevSumApiService {
             },
             body: JSON.stringify({
                 commits,
+                length: length || 'detailed',
             }),
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.message || 'Failed to generate report');
+            console.error('API Error Response:', data);
+            throw new Error(data.message || `Failed to generate report (${response.status})`);
         }
 
+        // The Laravel API returns { success: true, data: { summary, accomplishments } }
+        // We need to return just the data part
+        if (data.success && data.data) {
+            return data.data;
+        }
+
+        // Fallback if the response format is different
         return data;
     }
 

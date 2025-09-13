@@ -41,15 +41,15 @@ const displayCommitStats = (commits: any[], branch: string, filters?: {
   console.log();
   console.log(chalk.white(`🌿 Branch: ${chalk.yellow(branch)}`));
   console.log(chalk.white(`📝 Commits: ${chalk.green(commits.length)}`));
-  
+
   // Show applied filters
   if (filters?.since || filters?.until || filters?.author) {
     console.log();
     console.log(chalk.yellow('🔍 Applied Filters:'));
     if (filters.since) {
       // Enhanced display for today filter
-      const displaySince = filters.since.toLowerCase() === 'today' 
-        ? `today (${new Date().toISOString().split('T')[0]} 00:00:00 to now)` 
+      const displaySince = filters.since.toLowerCase() === 'today'
+        ? `today (${new Date().toISOString().split('T')[0]} 00:00:00 to now)`
         : filters.since;
       console.log(chalk.gray(`   📅 Since: ${displaySince}`));
     }
@@ -63,10 +63,10 @@ const displayCommitStats = (commits: any[], branch: string, filters?: {
       console.log(chalk.gray(`   👤 Author: ${filters.author}`));
     }
   }
-  
+
   // Calculate stats
   const authors = [...new Set(commits.map(c => c.author))];
-  
+
   // Show today's date range when using 'today'
   let dateRange = null;
   if (commits.length > 0) {
@@ -85,24 +85,24 @@ const displayCommitStats = (commits: any[], branch: string, filters?: {
       };
     }
   }
-  
+
   console.log();
   console.log(chalk.white(`👥 Authors: ${chalk.cyan(authors.length)}`));
   if (dateRange) {
     console.log(chalk.white(`📅 Period: ${chalk.gray(dateRange.oldest)} → ${chalk.gray(dateRange.newest)}`));
   }
-  
+
   // Show top contributors
   if (authors.length > 1) {
     const authorCounts = commits.reduce((acc: any, commit) => {
       acc[commit.author] = (acc[commit.author] || 0) + 1;
       return acc;
     }, {});
-    
+
     const topAuthors = Object.entries(authorCounts)
-      .sort(([,a], [,b]) => (b as number) - (a as number))
+      .sort(([, a], [, b]) => (b as number) - (a as number))
       .slice(0, 3);
-    
+
     console.log();
     console.log(chalk.yellow('🏆 Top Contributors:'));
     topAuthors.forEach(([author, count], index) => {
@@ -110,7 +110,7 @@ const displayCommitStats = (commits: any[], branch: string, filters?: {
       console.log(chalk.gray(`   ${medal} ${author}: ${count} commits`));
     });
   }
-  
+
   console.log();
   console.log(chalk.blue('═'.repeat(55)));
 };
@@ -134,7 +134,7 @@ const displaySuccess = (outputPath: string, commits: any[], processingTime: numb
   console.log(chalk.gray(`   Size: ${commits.length} commits analyzed`));
   console.log(chalk.gray(`   Processing time: ${processingTime.toFixed(2)}s`));
   console.log();
-  
+
   console.log(chalk.yellow('📖 What\'s in your report:'));
   console.log(chalk.gray('   ✅ Executive summary of accomplishments'));
   console.log(chalk.gray('   ✅ Key achievements and milestones'));
@@ -142,7 +142,7 @@ const displaySuccess = (outputPath: string, commits: any[], processingTime: numb
   console.log(chalk.gray('   ✅ Detailed commit analysis'));
   console.log(chalk.gray('   ✅ Actionable recommendations'));
   console.log();
-  
+
   console.log(chalk.cyan('💡 Next Steps:'));
   console.log(chalk.white(`   cat "${outputPath}"              `), chalk.gray('# View report'));
   console.log(chalk.white(`   code "${outputPath}"             `), chalk.gray('# Edit in VS Code'));
@@ -160,7 +160,7 @@ const displayError = (error: unknown, context: string) => {
   console.log(chalk.red('Context:'), context);
   console.log(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
   console.log();
-  
+
   console.log(chalk.yellow('🔧 Troubleshooting:'));
   console.log(chalk.gray('   • Ensure you\'re in a git repository'));
   console.log(chalk.gray('   • Check your API key configuration'));
@@ -175,40 +175,40 @@ const displayError = (error: unknown, context: string) => {
 // Enhanced validation helper with today support
 const validateDateFilters = (since?: string, until?: string): string | null => {
   const gitService = new GitService();
-  
+
   // Handle 'today' keyword - it's always valid
   if (since?.toLowerCase() === 'today' || until?.toLowerCase() === 'today') {
     // 'today' is always valid, no need to validate further for this case
   }
-  
+
   if (since && !gitService.isValidDate(since)) {
     return `Invalid --since date: "${since}". Use formats like: today, 7d, 2w, 1m, or YYYY-MM-DD`;
   }
-  
+
   if (until && !gitService.isValidDate(until)) {
     return `Invalid --until date: "${until}". Use format: YYYY-MM-DD or today`;
   }
-  
+
   // Check logical date order for absolute dates (skip if since/until is 'today')
   if (since && since.toLowerCase() !== 'today' && until && until.toLowerCase() !== 'today') {
     const sinceDate = new Date(since);
     const untilDate = new Date(until);
-    
+
     if (!isNaN(sinceDate.getTime()) && !isNaN(untilDate.getTime()) && sinceDate > untilDate) {
       return `--since date (${since}) cannot be after --until date (${until})`;
     }
   }
-  
+
   // Check if 'today' with until makes sense
   if (since?.toLowerCase() === 'today' && until && until.toLowerCase() !== 'today') {
     const today = new Date().toISOString().split('T')[0];
     const untilDate = new Date(until);
-    
+
     if (!isNaN(untilDate.getTime()) && until < today) {
       return `--until date (${until}) cannot be before today when using --since today`;
     }
   }
-  
+
   return null;
 };
 
@@ -221,17 +221,48 @@ export const reportCommand = new Command('report')
   .option('-f, --format <format>', 'Output format (markdown|json|html)', 'markdown')
   .option('--no-header', 'Skip the fancy header display')
   .option('--today', 'Shortcut for --since today (get commits from today only)')
-  .action(async (options: ReportOptions & { 
-    noHeader?: boolean; 
+  .option('--short', 'Generate a short, concise report')
+  .option('--light', 'Generate a light, minimal report')
+  .option('--ai <provider>', 'Select AI provider (gemini|claude|gpt-4|coming-soon)', 'gemini')
+  .action(async (options: ReportOptions & {
+    noHeader?: boolean;
     author?: string;
     today?: boolean;
+    short?: boolean;
+    light?: boolean;
+    ai?: string;
   }) => {
     const startTime = Date.now();
-    
+
     try {
       // Handle --today shortcut
       if (options.today) {
         options.since = 'today';
+      }
+
+      // Determine report length
+      if (options.light) {
+        options.length = 'light';
+      } else if (options.short) {
+        options.length = 'short';
+      } else {
+        options.length = 'detailed';
+      }
+
+      // Handle AI provider selection
+      if (options.ai && options.ai !== 'gemini') {
+        if (options.ai === 'coming-soon') {
+          console.log();
+          console.log(chalk.yellow('🚧 Coming Soon!'));
+          console.log(chalk.gray('Additional AI providers (Claude, GPT-4) are coming soon.'));
+          console.log(chalk.gray('Currently using Gemini for report generation.'));
+          console.log();
+        } else {
+          console.log();
+          console.log(chalk.yellow(`🤖 AI Provider: ${options.ai.toUpperCase()}`));
+          console.log(chalk.gray('Note: All providers currently use the DevSum API backend.'));
+          console.log();
+        }
       }
 
       if (!options.noHeader) {
@@ -291,7 +322,7 @@ export const reportCommand = new Command('report')
       // Get git commits - GitService now handles 'today' processing internally
       displayProgress('Analyzing commit history...');
       const commits = await gitService.getCommits(options.since, options.until, options.author);
-            
+
       if (commits.length === 0) {
         console.log();
         console.log(chalk.yellow('⚠️  No commits found matching your criteria'));
@@ -302,13 +333,13 @@ export const reportCommand = new Command('report')
         console.log(chalk.white('  devsum report --since 30d        '), chalk.gray('# Last 30 days'));
         console.log(chalk.white('  devsum report --since 2025-01-01 '), chalk.gray('# Since specific date'));
         console.log(chalk.white('  devsum report                    '), chalk.gray('# All commits'));
-        
+
         // Show current filters for debugging
         if (options.since || options.until || options.author) {
           console.log();
           console.log(chalk.gray('Current filters applied:'));
           if (options.since) {
-            const displaySince = options.since.toLowerCase() === 'today' 
+            const displaySince = options.since.toLowerCase() === 'today'
               ? `today (${new Date().toISOString().split('T')[0]} 00:00:00 to now)`
               : options.since;
             console.log(chalk.gray(`  --since: ${displaySince}`));
@@ -321,13 +352,13 @@ export const reportCommand = new Command('report')
           }
           if (options.author) console.log(chalk.gray(`  --author: ${options.author}`));
         }
-        
+
         process.exit(0);
       }
 
       const branch = await gitService.getCurrentBranch();
       displayProgress(`Found ${commits.length} commits`, true);
-      
+
       // Pass filters to display function
       displayCommitStats(commits, branch, {
         since: options.since,
@@ -338,21 +369,21 @@ export const reportCommand = new Command('report')
       // Generate AI report
       displayAIProgress(config.provider, config.model || 'default');
       const aiService = new AIService(config);
-      const report = await aiService.generateReport(commits);
+      const report = await aiService.generateReport(commits, options.length);
       displayProgress('AI analysis complete', true);
 
       // Prepare output
       const timestamp = new Date().toISOString().split('T')[0];
       const defaultName = `report-${timestamp}.${options.format === 'json' ? 'json' : 'md'}`;
       const outputPath = options.output || path.join(config.defaultOutput, defaultName);
-      
+
       // Ensure output directory exists
       await fs.mkdir(path.dirname(outputPath), { recursive: true });
 
       // Generate report content
       displayProgress('Generating report file...');
       let reportContent: string;
-      
+
       if (options.format === 'json') {
         reportContent = JSON.stringify({
           metadata: {
@@ -377,6 +408,7 @@ export const reportCommand = new Command('report')
           author: options.author,
           branch,
           generatedAt: new Date().toISOString(),
+          length: options.length,
         });
       }
 
@@ -404,9 +436,10 @@ function generateMarkdownReport(
     author?: string;
     branch: string;
     generatedAt: string;
+    length?: 'short' | 'light' | 'detailed';
   }
 ): string {
-  const dateRange = metadata.since 
+  const dateRange = metadata.since
     ? `${metadata.since}${metadata.until ? ` to ${metadata.until}` : ' to present'}`
     : 'All commits';
 
@@ -435,6 +468,62 @@ function generateMarkdownReport(
     }
   }
 
+  // Determine report length
+  const isLight = metadata.length === 'light';
+  const isShort = metadata.length === 'short';
+  const isDetailed = metadata.length === 'detailed' || !metadata.length;
+
+  // Light report - minimal content
+  if (isLight) {
+    return `# 🚀 Dev Report
+
+**Period:** ${periodDescription}${authorFilter} | **Commits:** ${commits.length}
+
+## Summary
+${report.summary}
+
+## Key Points
+${report.accomplishments?.slice(0, 3).map((acc: string) => `• ${acc}`).join('\n') || '• Work completed'}
+
+---
+*Generated by DevSum CLI*
+`;
+  }
+
+  // Short report - concise but complete
+  if (isShort) {
+    return `# 🚀 Development Report
+
+**Generated:** ${new Date(metadata.generatedAt).toLocaleString()}  
+**Branch:** \`${metadata.branch}\` | **Period:** ${periodDescription}${authorFilter} | **Commits:** ${commits.length}
+
+---
+
+## 📋 Summary
+
+${report.summary}
+
+## 🎯 Key Accomplishments
+
+${report.accomplishments?.map((acc: string) => `- ${acc}`).join('\n') || '- No accomplishments identified'}
+
+---
+
+## 📊 Recent Commits
+
+${commits.slice(0, 8).map(commit =>
+      `**${commit.message}** - ${commit.date.split('T')[0]} (${commit.author})
+`
+    ).join('')}
+
+${commits.length > 8 ? `*... and ${commits.length - 8} more commits*\n` : ''}
+
+---
+*Generated by DevSum CLI*
+`;
+  }
+
+  // Detailed report - full content
   return `# 🚀 Development Accomplishment Report
 
 **Generated:** ${new Date(metadata.generatedAt).toLocaleString()}  
@@ -464,15 +553,15 @@ ${report.recommendations.map((rec: string) => `- ${rec}`).join('\n')}
 
 ## 📊 Commit Analysis
 
-${commits.slice(0, 15).map(commit => 
-  `### 📝 ${commit.message}
+${commits.slice(0, 15).map(commit =>
+    `### 📝 ${commit.message}
 **📅 Date:** ${commit.date.split('T')[0]}  
 **👤 Author:** ${commit.author}  
 **📁 Files:** ${commit.files.slice(0, 5).join(', ')}${commit.files.length > 5 ? ` (+${commit.files.length - 5} more)` : ''}
 ${commit.insertions || commit.deletions ? `**📈 Changes:** +${commit.insertions || 0} -${commit.deletions || 0}` : ''}
 
 `
-).join('')}
+  ).join('')}
 
 ${commits.length > 15 ? `📎 *... and ${commits.length - 15} more commits*\n\n` : ''}
 

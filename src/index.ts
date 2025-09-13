@@ -1,11 +1,10 @@
 // src/index.ts
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { setupCommand } from './commands/setup.js';
-import { loginCommand } from './commands/login.js';
 import { authCommand } from './commands/auth.js';
 import { reportCommand } from './commands/report.js';
 import { updateCommand } from './commands/update.js';
+import { testCommand } from './commands/test.js';
 import { UpdateChecker } from './core/updateChecker.js';
 import { getVersion } from './utils/version.js';
 
@@ -21,22 +20,20 @@ program
   .version(currentVersion, '-v, --version', 'display version number');
 
 // Add commands
-program.addCommand(setupCommand);
-program.addCommand(loginCommand);
 program.addCommand(authCommand);
 program.addCommand(reportCommand);
 program.addCommand(updateCommand);
+program.addCommand(testCommand);
 
 // Custom help
 program.on('--help', () => {
   console.log('');
   console.log(chalk.cyan('Examples:'));
-  console.log(chalk.gray('  $ devsum setup                    # Interactive configuration'));
-  console.log(chalk.gray('  $ devsum auth                     # Authenticate with DevSum API'));
-  console.log(chalk.gray('  $ devsum report --since 7d        # Report for last 7 days'));
+  console.log(chalk.gray('  $ devsum test                     # Test API connection'));
+  console.log(chalk.gray('  $ devsum auth                     # Setup and authenticate with DevSum API'));
+  console.log(chalk.gray('  $ devsum report --since 7d        # Generate report for last 7 days'));
   console.log(chalk.gray('  $ devsum report --author "John"   # Filter by author'));
   console.log(chalk.gray('  $ devsum update                   # Check for updates'));
-  console.log(chalk.gray('  $ devsum login                    # View free mode info'));
   console.log('');
   console.log(chalk.blue('Documentation:'));
   console.log(chalk.gray('  https://github.com/rollenasistores/devsum#readme'));
@@ -59,11 +56,10 @@ program.exitOverride((err) => {
 program.on('command:*', (operands) => {
   console.error(chalk.red(`❌ Unknown command: ${operands[0]}`));
   console.log(chalk.blue('💡 Available commands:'));
-  console.log(chalk.gray('  setup   - Configure DevSum settings'));
-  console.log(chalk.gray('  auth    - Authenticate with DevSum API'));
+  console.log(chalk.gray('  test    - Test API connection'));
+  console.log(chalk.gray('  auth    - Setup and authenticate with DevSum API'));
   console.log(chalk.gray('  report  - Generate accomplishment reports'));
   console.log(chalk.gray('  update  - Check for DevSum updates'));
-  console.log(chalk.gray('  login   - View free mode information'));
   console.log(chalk.gray('  --help  - Show help information'));
   process.exit(1);
 });

@@ -16,7 +16,7 @@
 *Transform your git commits into professional accomplishment reports with the power of AI*
 
 [![npm version](https://badge.fury.io/js/@rollenasistores%2Fdevsum.svg)](https://badge.fury.io/js/@rollenasistores%2Fdevsum.svg)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Node.js](https://img.shields.io/badge/Node.js-43853D?logo=node.js&logoColor=white)](https://nodejs.org)
 
@@ -26,7 +26,7 @@
 
 ---
 
-## 🎯 What is DevSum?
+## 🎯 What is DevSum CLI?
 
 DevSum CLI is a powerful command-line tool that automatically generates professional accomplishment reports from your git commit history using AI. Perfect for:
 
@@ -46,8 +46,21 @@ DevSum CLI is a powerful command-line tool that automatically generates professi
 - Achievement extraction
 - Technical insight generation
 - Actionable recommendations
+- Multiple report lengths (Light, Short, Detailed)
 
 </td>
+<td>
+
+### 🌐 **Cloud-Powered Service**
+- No API key management needed
+- Secure authentication
+- Scalable infrastructure
+- Always up-to-date AI models
+- Zero configuration required
+
+</td>
+</tr>
+<tr>
 <td>
 
 ### 📊 **Multiple Output Formats**
@@ -57,8 +70,6 @@ DevSum CLI is a powerful command-line tool that automatically generates professi
 - PDF exports *(coming soon)*
 
 </td>
-</tr>
-<tr>
 <td>
 
 ### ⚙️ **Flexible Filtering**
@@ -66,8 +77,11 @@ DevSum CLI is a powerful command-line tool that automatically generates professi
 - Author-specific reports
 - Branch filtering
 - Custom time periods
+- Today's commits support
 
 </td>
+</tr>
+<tr>
 <td>
 
 ### 🌟 **Developer Experience**
@@ -75,6 +89,16 @@ DevSum CLI is a powerful command-line tool that automatically generates professi
 - Beautiful terminal UI
 - Comprehensive error handling
 - Offline configuration
+- Multiple AI provider support
+
+</td>
+<td>
+
+### 🔐 **Secure Authentication**
+- User registration & login
+- Secure token management
+- Profile management
+- Token generation & revocation
 
 </td>
 </tr>
@@ -89,29 +113,33 @@ DevSum CLI is a powerful command-line tool that automatically generates professi
 npm install -g @rollenasistores/devsum
 
 # Or use with npx (no installation needed)
-npx devsum setup
+npx @rollenasistores/devsum auth
 ```
 
 ### ⚡ Setup (One-time)
 
 ```bash
 # Interactive setup wizard
-devsum setup
+devsum auth
 ```
 
-Choose your AI provider (Gemini or Claude) and configure your API key.
+The setup will:
+1. Configure your output directory
+2. Let you choose your preferred AI provider
+3. Register/login to DevSum service
+4. Set up authentication tokens
 
 ### 📊 Generate Your First Report
 
 ```bash
-# Generate report for the last 7 days
+# Generate detailed report for the last 7 days
 devsum report --since 7d
 
-# Generate report for specific date range
-devsum report --since 2025-09-01
+# Generate short report for today
+devsum report --today --short
 
-# Generate report for specific author
-devsum report --author "John Doe" --since 30d
+# Generate light report for specific author
+devsum report --author "John Doe" --since 7d --light
 
 # Generate JSON report
 devsum report --format json --since 2025-08-01
@@ -119,30 +147,37 @@ devsum report --format json --since 2025-08-01
 
 ## 🤖 AI Providers
 
-DevSum supports multiple AI providers to fit your needs and budget:
+DevSum supports multiple AI providers through our cloud service:
 
-### 🤖 **Google Gemini** *(Recommended for beginners)*
-- ✅ **Free tier available** (15 requests/minute)
+### 🤖 **Google Gemini** *(Currently Available)*
+- ✅ **Powered by DevSum Cloud** - No API key needed
 - ⚡ Fast processing with `gemini-2.0-flash`
-- 🧠 Detailed analysis with `gemini-2.0-pro`
-- 🧠 Detailed analysis with `gemini-2.5-flash`
-- 🔗 [Get API Key](https://aistudio.google.com/app/apikey)
+- 🧠 Advanced analysis capabilities
+- 🔄 Automatic token management
 
-### 🧠 **Anthropic Claude** *(Premium option)*
+### 🧠 **Claude (Anthropic)** *(Coming Soon)*
 - 🎯 Advanced reasoning capabilities  
 - 📝 Superior report quality
-- 💰 Pay-per-use pricing
-- 🔗 [Get API Key](https://console.anthropic.com/)
+- 🔄 Seamless integration via DevSum Cloud
+
+### 🧠 **GPT-4 (OpenAI)** *(Coming Soon)*
+- 🎯 Latest OpenAI models
+- 📝 High-quality analysis
+- 🔄 Integrated via DevSum Cloud
 
 ## 📖 Documentation
 
 ### 🛠️ Commands
 
-#### `devsum setup`
-Interactive configuration wizard to set up your AI provider and preferences.
+#### `devsum auth`
+Authentication and setup wizard for DevSum service.
 
 ```bash
-devsum setup
+devsum auth                    # Interactive setup
+devsum auth --register        # Register new account
+devsum auth --login           # Login to existing account
+devsum auth --logout          # Logout and revoke token
+devsum auth --dev             # Use development server (localhost)
 ```
 
 #### `devsum report`
@@ -152,20 +187,44 @@ Generate accomplishment reports from git commits.
 devsum report [options]
 
 Options:
-  -s, --since <date>     Include commits since this date (YYYY-MM-DD or relative like "7d")
-  -u, --until <date>     Include commits until this date (YYYY-MM-DD)  
+  -s, --since <date>     Include commits since this date (YYYY-MM-DD, "today", or relative like "7d")
+  -u, --until <date>     Include commits until this date (YYYY-MM-DD or "today")
   -a, --author <name>    Filter commits by author name
   -o, --output <path>    Custom output file path
   -f, --format <format>  Output format (markdown|json) [default: markdown]
+  --short                Generate short, concise report
+  --light                Generate light, minimal report
+  --ai <provider>        Select AI provider (gemini|claude|gpt-4|coming-soon) [default: gemini]
+  --today                Shortcut for --since today
   --no-header           Skip the fancy header display
 ```
 
-#### `devsum login`
-View information about DevSum's free mode and available features.
+#### `devsum test`
+Test connectivity to DevSum service.
 
 ```bash
-devsum login
+devsum test              # Test service connection
+devsum test --dev        # Test development server (localhost)
 ```
+
+### 📊 Report Lengths
+
+DevSum offers three report lengths to fit your needs:
+
+#### 🌟 **Light Report** (`--light`)
+- **Perfect for:** Daily standups, quick updates
+- **Content:** One-sentence summary + top 2-3 accomplishments
+- **Size:** ~3-5 lines
+
+#### 📝 **Short Report** (`--short`)
+- **Perfect for:** Weekly summaries, team updates
+- **Content:** Brief summary + key accomplishments + recent commits
+- **Size:** ~15-20 lines
+
+#### 📋 **Detailed Report** (default)
+- **Perfect for:** Performance reviews, comprehensive analysis
+- **Content:** Full executive summary + all accomplishments + technical highlights + detailed commit analysis
+- **Size:** ~50+ lines
 
 ### 📅 Date Formats
 
@@ -181,6 +240,10 @@ devsum report --since 7d        # Last 7 days
 devsum report --since 2w        # Last 2 weeks
 devsum report --since 1m        # Last 1 month
 devsum report --since 3m        # Last 3 months
+
+# Today's commits
+devsum report --today           # All commits from today
+devsum report --since today     # Same as --today
 ```
 
 ### 📁 Output Structure
@@ -189,57 +252,66 @@ Reports are saved to `./reports/` by default (configurable):
 
 ```
 reports/
-├── report-2025-09-10.md      # Today's report
-├── report-2025-09-09.json    # Yesterday's JSON report
+├── report-2025-09-13.md      # Today's detailed report
+├── report-2025-09-12-short.md # Yesterday's short report
+├── report-2025-09-11-light.md # Light report
 └── team-sprint-report.md     # Custom named report
 ```
 
 ## 💡 Examples
 
-### 📊 Weekly Team Report
+### 📊 Daily Standup (Light Report)
 
 ```bash
-# Generate team accomplishment report for the last week
-devsum report --since 7d --output ./reports/weekly-team-report.md
+# Generate light report for today's standup
+devsum report --today --light
 ```
 
 **Sample Output:**
-
 ```markdown
-# 🚀 Development Accomplishment Report
+# 🚀 Dev Report
 
-**Generated:** September 10, 2025, 2:30:45 PM  
-**Branch:** `main`  
-**Period:** 7d to present  
-**Commits Analyzed:** 23
+**Period:** Today (2025-09-13 00:00:00 to 14:30) | **Commits:** 5
 
-## 📋 Executive Summary
+## Summary
+Completed user authentication implementation and fixed critical bugs in the payment system.
 
-The development team has demonstrated strong productivity this week with significant 
-progress across multiple features. Key highlights include the implementation of user 
-authentication, performance optimizations, and comprehensive testing coverage...
+## Key Points
+• Implemented OAuth2 authentication with Google and GitHub
+• Fixed payment processing bug affecting 15% of transactions
+• Added comprehensive error handling for API endpoints
 
-## 🎯 Key Accomplishments
-
-- Implemented OAuth2 authentication system with Google and GitHub providers
-- Optimized database queries resulting in 40% faster page load times  
-- Added comprehensive unit tests bringing coverage to 85%
-- Fixed critical security vulnerability in user input validation
-- Deployed new CI/CD pipeline reducing deployment time by 60%
+---
+*Generated by DevSum CLI*
 ```
 
-### 🎯 Personal Performance Review
+### 📝 Weekly Team Report (Short Report)
 
 ```bash
-# Generate personal report for performance review
-devsum report --author "$(git config user.name)" --since 3m --format json
+# Generate short report for weekly team update
+devsum report --since 7d --short --output weekly-update.md
 ```
 
-### 📈 Sprint Retrospective
+### 📋 Performance Review (Detailed Report)
+
+```bash
+# Generate detailed report for performance review
+devsum report --author "$(git config user.name)" --since 3m
+```
+
+### 🎯 Sprint Retrospective
 
 ```bash
 # Generate sprint report for specific date range
 devsum report --since 2025-08-26 --until 2025-09-08 --output sprint-15-report.md
+```
+
+### 🤖 AI Provider Selection
+
+```bash
+# Use different AI providers (coming soon)
+devsum report --ai claude --since 7d
+devsum report --ai gpt-4 --today --short
 ```
 
 ## ⚙️ Configuration
@@ -249,14 +321,17 @@ devsum report --since 2025-08-26 --until 2025-09-08 --output sprint-15-report.md
 - **Linux/macOS:** `~/.config/devsum/config.json`
 - **Windows:** `%APPDATA%\devsum\config.json`
 
-### 🔧 Manual Configuration
+### 🔧 Configuration Structure
 
 ```json
 {
-  "provider": "gemini",
-  "apiKey": "your-api-key-here",
-  "model": "gemini-1.5-flash",
-  "defaultOutput": "./reports"
+  "provider": "devsum-api",
+  "apiKey": "",
+  "defaultOutput": "./reports",
+  "model": "devsum-gemini",
+  "devsumApiUrl": "https://api-devsum.rollenasistores.site/api",
+  "devsumToken": "your-auth-token-here",
+  "aiProvider": "gemini"
 }
 ```
 
@@ -264,7 +339,7 @@ devsum report --since 2025-08-26 --until 2025-09-08 --output sprint-15-report.md
 
 - **Node.js** 18.0.0 or higher
 - **Git** repository (must be run within a git repo)
-- **API Key** for chosen AI provider (Gemini or Claude)
+- **DevSum Account** (free registration)
 
 ## 🐛 Troubleshooting
 
@@ -281,13 +356,13 @@ git commit -m "Initial commit"
 #### ❌ "No configuration found"
 ```bash
 # Run setup wizard
-devsum setup
+devsum auth
 ```
 
-#### ❌ "API key invalid"
+#### ❌ "Authentication failed"
 ```bash
-# Reconfigure with valid API key
-devsum setup
+# Re-authenticate
+devsum auth --login
 ```
 
 #### ❌ "No commits found"
@@ -297,6 +372,18 @@ devsum report --since 30d
 
 # Or check if commits exist
 git log --oneline
+```
+
+#### ❌ "Failed to connect to DevSum service"
+```bash
+# Test service connection
+devsum test
+
+# Check your internet connection
+ping api-devsum.rollenasistores.site
+
+# For development, use localhost
+devsum auth --dev
 ```
 
 ### 🔍 Debug Mode
@@ -330,19 +417,40 @@ npm run test     # Run test suite
 npm run lint     # Check code style
 ```
 
+### 🔧 Development Mode
+
+For developers working on DevSum CLI or testing with local API:
+
+```bash
+# Use development server (localhost:8000)
+devsum auth --dev
+
+# Test with development server
+devsum test --dev
+
+# Generate reports using local API
+devsum report --since 7d
+```
+
+**Note:** Development mode automatically switches to `http://localhost:8000/api` for local testing.
+
 ## 📜 License
 
-This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ## 🙋 Support
 
 - 🐛 **Bug Reports:** [GitHub Issues](https://github.com/rollenasistores/devsum/issues)
 - 💬 **Discussions:** [GitHub Discussions](https://github.com/rollenasistores/devsum/discussions)
-- 📧 **Email:** support@devsum.dev
+- 📧 **Email:** support@devsum.com
 - 🐦 **Twitter:** [@devsum_cli](https://twitter.com/devsum_cli)
 
 ## 🗺️ Roadmap
 
+- [x] **DevSum Cloud Service** - Centralized AI processing
+- [x] **Multiple Report Lengths** - Light, Short, Detailed reports
+- [x] **User Authentication** - Registration, login, token management
+- [x] **AI Provider Selection** - Gemini, Claude, GPT-4 support
 - [ ] **HTML Report Generation** - Beautiful web reports
 - [ ] **PDF Export** - Professional PDF reports  
 - [ ] **Team Collaboration** - Multi-user support

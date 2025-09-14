@@ -1,6 +1,6 @@
 {
   "name": "@rollenasistores/devsum",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "🚀 AI-powered CLI tool that generates professional accomplishment reports from git commits. Transform your development work into compelling narratives for performance reviews, sprint summaries, and project updates.",
   "type": "module",
   "main": "dist/index.js",
@@ -27,7 +27,7 @@
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run clean && npm run typecheck && npm run build",
     "postversion": "git push && git push --tags",
-    "release": "np",
+    "release": "standard-version",
     "docs:dev": "vuepress dev docs",
     "docs:build": "vuepress build docs"
   },
@@ -85,6 +85,7 @@
     "commander": "^12.1.0",
     "inquirer": "^9.2.15",
     "marked": "^16.2.1",
+    "openai": "^5.20.2",
     "puppeteer": "^24.19.0",
     "simple-git": "^3.25.0"
   },
@@ -100,6 +101,7 @@
     "jest": "^29.7.0",
     "np": "^10.0.5",
     "prettier": "^3.2.5",
+    "standard-version": "^9.5.0",
     "ts-jest": "^29.1.2",
     "tsx": "^4.7.1",
     "typescript": "^5.4.5"

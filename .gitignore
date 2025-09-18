@@ -38,3 +38,5 @@ coverage/
 
 # Reports (example output)
 reports/
+
+.cursor/*

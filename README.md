@@ -46,6 +46,7 @@ DevSum CLI is a powerful command-line tool that automatically generates professi
 - Achievement extraction
 - Technical insight generation
 - Actionable recommendations
+- Multiple report lengths (Light, Short, Detailed)
 
 </td>
 <td>
@@ -53,7 +54,7 @@ DevSum CLI is a powerful command-line tool that automatically generates professi
 ### 📊 **Multiple Output Formats**
 - Beautiful Markdown reports
 - Structured JSON data
-- HTML presentations *(coming soon)*
+- Stunning HTML presentations
 - PDF exports *(coming soon)*
 
 </td>
@@ -99,7 +100,7 @@ npx devsum setup
 devsum setup
 ```
 
-Choose your AI provider (Gemini or Claude) and configure your API key.
+Choose your AI provider (Gemini, Claude, or OpenAI) and configure your API key.
 
 ### 📊 Generate Your First Report
 
@@ -115,6 +116,19 @@ devsum report --author "John Doe" --since 30d
 
 # Generate JSON report
 devsum report --format json --since 2025-08-01
+
+# Generate HTML presentation
+devsum report --format html --since 7d
+
+# Generate different report lengths
+devsum report --light           # Brief executive summary
+devsum report --short           # Quick daily update
+devsum report --detailed        # Comprehensive analysis (default)
+
+# Or use the long form
+devsum report --length light    # Brief executive summary
+devsum report --length short    # Quick daily update
+devsum report --length detailed # Comprehensive analysis (default)
 ```
 
 ## 🤖 AI Providers
@@ -124,15 +138,21 @@ DevSum supports multiple AI providers to fit your needs and budget:
 ### 🤖 **Google Gemini** *(Recommended for beginners)*
 - ✅ **Free tier available** (15 requests/minute)
 - ⚡ Fast processing with `gemini-2.0-flash`
-- 🧠 Detailed analysis with `gemini-2.0-pro`
-- 🧠 Detailed analysis with `gemini-2.5-flash`
+- 🧠 Detailed analysis with `gemini-1.5-pro`
+- 🧠 Balanced performance with `gemini-1.5-flash`
 - 🔗 [Get API Key](https://aistudio.google.com/app/apikey)
 
-### 🧠 **Anthropic Claude** *(Premium option)*
-- 🎯 Advanced reasoning capabilities  
-- 📝 Superior report quality
+### 🧠 **Anthropic Claude** *(Advanced reasoning)*
+- 🎯 Superior reasoning capabilities  
+- 📝 High-quality report generation
 - 💰 Pay-per-use pricing
 - 🔗 [Get API Key](https://console.anthropic.com/)
+
+### 🚀 **OpenAI GPT-4** *(Industry leading)*
+- 🏆 Industry-leading AI capabilities
+- 🎯 Premium report quality
+- 💰 Pay-per-use pricing
+- 🔗 [Get API Key](https://platform.openai.com/api-keys)
 
 ## 📖 Documentation
 
@@ -156,7 +176,11 @@ Options:
   -u, --until <date>     Include commits until this date (YYYY-MM-DD)  
   -a, --author <name>    Filter commits by author name
   -o, --output <path>    Custom output file path
-  -f, --format <format>  Output format (markdown|json) [default: markdown]
+  -f, --format <format>  Output format (markdown|json|html) [default: markdown]
+  -l, --length <length>  Report length (light|short|detailed) [default: detailed]
+  --light               Shortcut for --length light (brief executive summary)
+  --short               Shortcut for --length short (quick daily update)
+  --detailed            Shortcut for --length detailed (comprehensive analysis)
   --no-header           Skip the fancy header display
 ```
 
@@ -185,13 +209,14 @@ devsum report --since 3m        # Last 3 months
 
 ### 📁 Output Structure
 
-Reports are saved to `./reports/` by default (configurable):
+Reports are saved to `./reports/` by default (configurable) with timestamped filenames:
 
 ```
 reports/
-├── report-2025-09-10.md      # Today's report
-├── report-2025-09-09.json    # Yesterday's JSON report
-└── team-sprint-report.md     # Custom named report
+├── report-2025-09-10T14-30-45.md           # Detailed report with timestamp
+├── report-2025-09-10T14-30-45-light.html   # Light HTML presentation
+├── report-2025-09-10T14-30-45-short.json   # Short JSON report
+└── team-sprint-report.html                 # Custom HTML report
 ```
 
 ## 💡 Examples
@@ -242,6 +267,29 @@ devsum report --author "$(git config user.name)" --since 3m --format json
 devsum report --since 2025-08-26 --until 2025-09-08 --output sprint-15-report.md
 ```
 
+### 📊 Report Length Examples
+
+```bash
+# Light report - Perfect for executive summaries
+devsum report --light --since 7d
+
+# Short report - Great for daily standups
+devsum report --short --since today
+
+# Detailed report - Comprehensive analysis (default)
+devsum report --detailed --since 30d
+
+# Or use the long form
+devsum report --length light --since 7d
+devsum report --length short --since today
+devsum report --length detailed --since 30d
+
+# Generate HTML presentations
+devsum report --format html --light --since 7d
+devsum report --format html --short --since today
+devsum report --format html --detailed --since 30d
+```
+
 ## ⚙️ Configuration
 
 ### 📂 Config File Location
@@ -264,7 +312,7 @@ devsum report --since 2025-08-26 --until 2025-09-08 --output sprint-15-report.md
 
 - **Node.js** 18.0.0 or higher
 - **Git** repository (must be run within a git repo)
-- **API Key** for chosen AI provider (Gemini or Claude)
+- **API Key** for chosen AI provider (Gemini, Claude, or OpenAI)
 
 ## 🐛 Troubleshooting
 
@@ -343,7 +391,7 @@ This project is licensed under the **Apache License 2.0** - see the [LICENSE](LI
 
 ## 🗺️ Roadmap
 
-- [ ] **HTML Report Generation** - Beautiful web reports
+- [x] **HTML Report Generation** - Beautiful web reports with modern styling
 - [ ] **PDF Export** - Professional PDF reports  
 - [ ] **Team Collaboration** - Multi-user support
 - [ ] **Integration APIs** - Slack, Teams, Jira

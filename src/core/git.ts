@@ -22,13 +22,19 @@ export class GitService {
     const args = ['log', '--max-count=100', '--pretty=format:%H|%ai|%s|%an <%ae>'];
 
     if (since) {
-      // FIX: Use single argument format for git dates
-      args.push(`--since=${since}`);
+      // Convert 'today' to specific date string for consistent behavior
+      const sinceDate = since.toLowerCase() === 'today' 
+        ? new Date().toISOString().split('T')[0] + ' 00:00:00'
+        : since;
+      args.push(`--since=${sinceDate}`);
     }
     
     if (until) {
-      // FIX: Use single argument format for git dates
-      args.push(`--until=${until}`);
+      // Convert 'today' to specific date string for consistent behavior
+      const untilDate = until.toLowerCase() === 'today'
+        ? new Date().toISOString().split('T')[0] + ' 23:59:59'
+        : until;
+      args.push(`--until=${untilDate}`);
     }
     
     if (author) {
@@ -141,8 +147,11 @@ export class GitService {
       const args = ['log', '--pretty=format:%an <%ae>'];
       
       if (since) {
-        // FIX: Use consistent argument format
-        args.push(`--since=${since}`);
+        // Convert 'today' to specific date string for consistent behavior
+        const sinceDate = since.toLowerCase() === 'today' 
+          ? new Date().toISOString().split('T')[0] + ' 00:00:00'
+          : since;
+        args.push(`--since=${sinceDate}`);
       }
       
       const result = await this.git.raw(args);

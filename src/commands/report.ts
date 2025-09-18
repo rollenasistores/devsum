@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { configManager } from '../core/config.js';
 import { GitService } from '../core/git.js';
 import { AIService } from '../core/ai.js';
+import { HTMLReportGenerator } from '../core/htmlReportGenerator.js';
 import { ReportOptions } from '../types/index.js';
 
 const REPORT_ICON = `
@@ -124,7 +125,7 @@ const displayAIProgress = (provider: string, model: string) => {
   console.log();
 };
 
-const displaySuccess = (outputPath: string, commits: any[], processingTime: number) => {
+const displaySuccess = (outputPath: string, commits: any[], processingTime: number, reportLength?: string) => {
   console.log();
   console.log(chalk.green('═'.repeat(55)));
   console.log(chalk.green.bold('🎉 Report Generated Successfully!'));
@@ -132,6 +133,7 @@ const displaySuccess = (outputPath: string, commits: any[], processingTime: numb
   console.log(chalk.blue('📄 Report Details:'));
   console.log(chalk.gray(`   Location: ${outputPath}`));
   console.log(chalk.gray(`   Size: ${commits.length} commits analyzed`));
+  console.log(chalk.gray(`   Length: ${reportLength || 'detailed'}`));
   console.log(chalk.gray(`   Processing time: ${processingTime.toFixed(2)}s`));
   console.log();
   
@@ -147,6 +149,7 @@ const displaySuccess = (outputPath: string, commits: any[], processingTime: numb
   console.log(chalk.white(`   cat "${outputPath}"              `), chalk.gray('# View report'));
   console.log(chalk.white(`   code "${outputPath}"             `), chalk.gray('# Edit in VS Code'));
   console.log(chalk.white(`   devsum report --format json      `), chalk.gray('# Generate JSON'));
+  console.log(chalk.white(`   devsum report --format html      `), chalk.gray('# Generate HTML'));
   console.log();
   console.log(chalk.green('🚀 Great work! Share your accomplishments with the team!'));
   console.log(chalk.green('═'.repeat(55)));
@@ -219,19 +222,87 @@ export const reportCommand = new Command('report')
   .option('-a, --author <name>', 'Filter commits by author name')
   .option('-o, --output <path>', 'Output file path')
   .option('-f, --format <format>', 'Output format (markdown|json|html)', 'markdown')
+  .option('-l, --length <length>', 'Report length (light|short|detailed)', 'detailed')
+  .option('--light', 'Shortcut for --length light (brief executive summary)')
+  .option('--short', 'Shortcut for --length short (quick daily update)')
+  .option('--detailed', 'Shortcut for --length detailed (comprehensive analysis)')
   .option('--no-header', 'Skip the fancy header display')
   .option('--today', 'Shortcut for --since today (get commits from today only)')
+  .option('-p, --provider <name>', 'Use specific AI provider by name')
+  .option('--list-providers', 'List available AI providers and exit')
   .action(async (options: ReportOptions & { 
     noHeader?: boolean; 
     author?: string;
     today?: boolean;
+    length?: string;
+    light?: boolean;
+    short?: boolean;
+    detailed?: boolean;
+    provider?: string;
+    listProviders?: boolean;
   }) => {
     const startTime = Date.now();
     
     try {
+      // Handle --list-providers option
+      if (options.listProviders) {
+        const config = await configManager.loadConfig();
+        if (!config || config.providers.length === 0) {
+          console.log();
+          console.log(chalk.yellow('⚠️  No AI providers configured'));
+          console.log(chalk.blue('💡 Run'), chalk.cyan('"devsum setup"'), chalk.blue('to configure providers'));
+          return;
+        }
+
+        console.log();
+        console.log(chalk.blue('═'.repeat(55)));
+        console.log(chalk.cyan.bold('🤖 Available AI Providers'));
+        console.log();
+        
+        config.providers.forEach((provider, index) => {
+          const isDefault = provider.isDefault ? chalk.green(' (DEFAULT)') : '';
+          console.log(chalk.white(`   ${index + 1}. ${provider.name}${isDefault}`));
+          console.log(chalk.gray(`      Provider: ${provider.provider.toUpperCase()}`));
+          console.log(chalk.gray(`      Model: ${provider.model || 'default'}`));
+          console.log();
+        });
+        
+        console.log(chalk.blue('═'.repeat(55)));
+        console.log(chalk.cyan('💡 Usage: devsum report --provider <name>'));
+        return;
+      }
+
       // Handle --today shortcut
       if (options.today) {
         options.since = 'today';
+      }
+
+      // Handle length shortcuts
+      if (options.light) {
+        options.length = 'light';
+      } else if (options.short) {
+        options.length = 'short';
+      } else if (options.detailed) {
+        options.length = 'detailed';
+      }
+
+      // Validate length parameter
+      const validLengths = ['light', 'short', 'detailed'];
+      if (options.length && !validLengths.includes(options.length)) {
+        console.log();
+        console.error(chalk.red('❌ Invalid report length'));
+        console.log(chalk.yellow(`Valid options: ${validLengths.join(', ')}`));
+        console.log();
+        console.log(chalk.blue('💡 Report length options:'));
+        console.log(chalk.white('   --length light     '), chalk.gray('# Brief executive summary (3-5 accomplishments)'));
+        console.log(chalk.white('   --length short     '), chalk.gray('# Quick daily/weekly update (5-8 accomplishments)'));
+        console.log(chalk.white('   --length detailed  '), chalk.gray('# Comprehensive analysis (8-15 accomplishments)'));
+        console.log();
+        console.log(chalk.blue('💡 Shortcut options:'));
+        console.log(chalk.white('   --light            '), chalk.gray('# Same as --length light'));
+        console.log(chalk.white('   --short            '), chalk.gray('# Same as --length short'));
+        console.log(chalk.white('   --detailed         '), chalk.gray('# Same as --length detailed'));
+        process.exit(1);
       }
 
       if (!options.noHeader) {
@@ -257,7 +328,7 @@ export const reportCommand = new Command('report')
         process.exit(1);
       }
 
-      // Load configuration
+      // Load configuration and select provider
       displayProgress('Loading configuration...');
       const config = await configManager.loadConfig();
       if (!config) {
@@ -269,7 +340,28 @@ export const reportCommand = new Command('report')
         console.log(chalk.white('  devsum setup  '), chalk.gray('# Interactive configuration'));
         process.exit(1);
       }
-      displayProgress('Configuration loaded', true);
+
+      // Get the selected provider
+      const selectedProvider = await configManager.getProvider(options.provider);
+      if (!selectedProvider) {
+        console.log();
+        if (options.provider) {
+          console.error(chalk.red(`❌ Provider '${options.provider}' not found`));
+          console.log(chalk.blue('💡 Available providers:'));
+          config.providers.forEach(p => {
+            const isDefault = p.isDefault ? chalk.green(' (DEFAULT)') : '';
+            console.log(chalk.gray(`   • ${p.name}${isDefault}`));
+          });
+          console.log();
+          console.log(chalk.cyan('💡 Use --list-providers to see all available providers'));
+        } else {
+          console.error(chalk.red('❌ No AI providers configured'));
+          console.log(chalk.blue('💡 Run'), chalk.cyan('"devsum setup"'), chalk.blue('to configure providers'));
+        }
+        process.exit(1);
+      }
+
+      displayProgress(`Using AI provider: ${selectedProvider.name} (${selectedProvider.provider})`, true);
 
       // Validate git repository
       displayProgress('Checking git repository...');
@@ -336,14 +428,18 @@ export const reportCommand = new Command('report')
       });
 
       // Generate AI report
-      displayAIProgress(config.provider, config.model || 'default');
-      const aiService = new AIService(config);
-      const report = await aiService.generateReport(commits);
+      displayAIProgress(selectedProvider.provider, selectedProvider.model || 'default');
+      const aiService = AIService.fromProvider(selectedProvider);
+      const reportLength = (options.length as 'light' | 'short' | 'detailed') || 'detailed';
+      const report = await aiService.generateReport(commits, reportLength);
       displayProgress('AI analysis complete', true);
 
-      // Prepare output
-      const timestamp = new Date().toISOString().split('T')[0];
-      const defaultName = `report-${timestamp}.${options.format === 'json' ? 'json' : 'md'}`;
+      // Prepare output with full timestamp
+      const now = new Date();
+      const timestamp = now.toISOString().replace(/[:.]/g, '-').split('.')[0]; // YYYY-MM-DDTHH-MM-SS
+      const lengthSuffix = reportLength !== 'detailed' ? `-${reportLength}` : '';
+      const fileExtension = options.format === 'json' ? 'json' : options.format === 'html' ? 'html' : 'md';
+      const defaultName = `report-${timestamp}${lengthSuffix}.${fileExtension}`;
       const outputPath = options.output || path.join(config.defaultOutput, defaultName);
       
       // Ensure output directory exists
@@ -361,6 +457,7 @@ export const reportCommand = new Command('report')
             period: options.since ? `${options.since}${options.until ? ` to ${options.until}` : ' to present'}` : 'All commits',
             commitsAnalyzed: commits.length,
             author: options.author || 'All authors',
+            reportLength: reportLength,
             filters: {
               since: options.since,
               until: options.until,
@@ -370,6 +467,26 @@ export const reportCommand = new Command('report')
           report,
           commits: commits.slice(0, 50) // Limit commits in JSON
         }, null, 2);
+      } else if (options.format === 'html') {
+        const htmlGenerator = new HTMLReportGenerator();
+        const authors = [...new Set(commits.map(c => c.author))];
+        const filesModified = [...new Set(commits.flatMap(c => c.files))].length;
+        const dateRange = commits.length > 0 
+          ? `${commits[commits.length - 1].date.split('T')[0]} → ${commits[0].date.split('T')[0]}`
+          : 'N/A';
+
+        reportContent = htmlGenerator.generateReport(report, commits, {
+          since: options.since,
+          until: options.until,
+          author: options.author,
+          branch,
+          generatedAt: new Date().toISOString(),
+          length: reportLength,
+          commitsAnalyzed: commits.length,
+          authors: authors.length,
+          filesModified,
+          dateRange
+        });
       } else {
         reportContent = generateMarkdownReport(report, commits, {
           since: options.since,
@@ -377,6 +494,7 @@ export const reportCommand = new Command('report')
           author: options.author,
           branch,
           generatedAt: new Date().toISOString(),
+          length: reportLength,
         });
       }
 
@@ -385,7 +503,7 @@ export const reportCommand = new Command('report')
       displayProgress('Report saved', true);
 
       const processingTime = (Date.now() - startTime) / 1000;
-      displaySuccess(outputPath, commits, processingTime);
+      displaySuccess(outputPath, commits, processingTime, reportLength);
 
     } catch (error) {
       const processingTime = (Date.now() - startTime) / 1000;
@@ -404,6 +522,7 @@ function generateMarkdownReport(
     author?: string;
     branch: string;
     generatedAt: string;
+    length?: string;
   }
 ): string {
   const dateRange = metadata.since 
@@ -435,12 +554,15 @@ function generateMarkdownReport(
     }
   }
 
+  const lengthDisplay = metadata.length && metadata.length !== 'detailed' 
+    ? `  \n**Report Length:** ${metadata.length.charAt(0).toUpperCase() + metadata.length.slice(1)}` : '';
+
   return `# 🚀 Development Accomplishment Report
 
 **Generated:** ${new Date(metadata.generatedAt).toLocaleString()}  
 **Branch:** \`${metadata.branch}\`  
 **Period:** ${periodDescription}${authorFilter}  
-**Commits Analyzed:** ${commits.length}
+**Commits Analyzed:** ${commits.length}${lengthDisplay}
 
 ---
 

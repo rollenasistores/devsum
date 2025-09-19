@@ -248,3 +248,151 @@ export interface PlainTextReportMetadata {
   filesModified: number;
   dateRange: string;
 }
+
+/**
+ * Analytics options interface
+ */
+export interface AnalyticsOptions {
+  since?: string | undefined;
+  until?: string | undefined;
+  author?: string | undefined;
+  output?: string | undefined;
+  format?: AnalyticsFormat | undefined;
+  focus?: AnalyticsFocus | undefined;
+  compare?: string | undefined;
+  noHeader?: boolean | undefined;
+  provider?: string | undefined;
+  interactive?: boolean | undefined;
+  export?: AnalyticsExportFormat | undefined;
+}
+
+/**
+ * Supported analytics output formats
+ */
+export type AnalyticsFormat = 'dashboard' | 'json' | 'summary';
+
+/**
+ * Analytics focus areas
+ */
+export type AnalyticsFocus = 'productivity' | 'quality' | 'collaboration' | 'patterns' | 'all';
+
+/**
+ * Analytics export formats
+ */
+export type AnalyticsExportFormat = 'png' | 'pdf' | 'svg' | 'html';
+
+/**
+ * Commit analytics data interface
+ */
+export interface CommitAnalytics {
+  readonly totalCommits: number;
+  readonly commitsByDay: Readonly<Record<string, number>>;
+  readonly commitsByHour: Readonly<Record<string, number>>;
+  readonly commitsByAuthor: Readonly<Record<string, number>>;
+  readonly commitsByBranch: Readonly<Record<string, number>>;
+  readonly averageCommitsPerDay: number;
+  readonly mostActiveDay: string;
+  readonly mostActiveHour: number;
+  readonly peakProductivityTime: string;
+}
+
+/**
+ * File change analytics interface
+ */
+export interface FileChangeAnalytics {
+  readonly totalFilesChanged: number;
+  readonly mostModifiedFiles: Readonly<
+    Array<{ file: string; changes: number; type: FileChangeType }>
+  >;
+  readonly filesByType: Readonly<Record<string, number>>;
+  readonly averageFilesPerCommit: number;
+  readonly largestCommit: { hash: string; filesChanged: number; date: string };
+  readonly codeComplexityTrend: Readonly<Array<{ date: string; complexity: number }>>;
+}
+
+/**
+ * Productivity analytics interface
+ */
+export interface ProductivityAnalytics {
+  readonly codingStreak: number;
+  readonly longestStreak: number;
+  readonly averageCommitsPerWeek: number;
+  readonly productivityScore: number;
+  readonly workPatterns: Readonly<{
+    morning: number;
+    afternoon: number;
+    evening: number;
+    night: number;
+  }>;
+  readonly weeklyPattern: Readonly<Record<string, number>>;
+  readonly productivityTrend: Readonly<Array<{ week: string; score: number }>>;
+}
+
+/**
+ * Collaboration analytics interface
+ */
+export interface CollaborationAnalytics {
+  readonly totalAuthors: number;
+  readonly authorActivity: Readonly<Array<{ author: string; commits: number; percentage: number }>>;
+  readonly collaborationScore: number;
+  readonly mostCollaborativeDay: string;
+  readonly pairProgrammingIndicators: Readonly<Array<{ date: string; authors: string[] }>>;
+  readonly branchCollaboration: Readonly<Record<string, string[]>>;
+}
+
+/**
+ * Code quality analytics interface
+ */
+export interface CodeQualityAnalytics {
+  readonly averageCommitSize: number;
+  readonly refactoringFrequency: number;
+  readonly bugFixPercentage: number;
+  readonly featureCommitPercentage: number;
+  readonly qualityScore: number;
+  readonly technicalDebtIndicators: Readonly<Array<{ file: string; issues: string[] }>>;
+  readonly improvementSuggestions: Readonly<string[]>;
+}
+
+/**
+ * Comprehensive analytics data interface
+ */
+export interface AnalyticsData {
+  readonly period: {
+    since: string;
+    until: string;
+    days: number;
+  };
+  readonly repository: {
+    name: string;
+    branch: string;
+    totalCommits: number;
+  };
+  readonly commits: CommitAnalytics;
+  readonly files: FileChangeAnalytics;
+  readonly productivity: ProductivityAnalytics;
+  readonly collaboration: CollaborationAnalytics;
+  readonly quality: CodeQualityAnalytics;
+  readonly generatedAt: string;
+  readonly metadata: {
+    focus: AnalyticsFocus;
+    format: AnalyticsFormat;
+    provider: string;
+  };
+}
+
+/**
+ * Dashboard configuration interface
+ */
+export interface DashboardConfig {
+  readonly theme: 'light' | 'dark' | 'auto';
+  readonly charts: Readonly<{
+    commitHeatmap: boolean;
+    productivityTrends: boolean;
+    fileAnalytics: boolean;
+    collaborationMetrics: boolean;
+    qualityIndicators: boolean;
+  }>;
+  readonly interactive: boolean;
+  readonly exportable: boolean;
+  readonly responsive: boolean;
+}

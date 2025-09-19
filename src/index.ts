@@ -6,6 +6,7 @@ import { loginCommand } from './commands/login.js';
 import { reportCommand } from './commands/report.js';
 import { updateCommand } from './commands/update.js';
 import { commitCommand } from './commands/commit.js';
+import { analyticsCommand } from './commands/analytics.js';
 import { UpdateChecker } from './core/updateChecker.js';
 import { getVersion } from './utils/version.js';
 
@@ -26,6 +27,7 @@ program
 program.addCommand(setupCommand);
 program.addCommand(loginCommand);
 program.addCommand(reportCommand);
+program.addCommand(analyticsCommand);
 program.addCommand(updateCommand);
 program.addCommand(commitCommand);
 
@@ -35,7 +37,7 @@ program.on('--help', () => {
   console.log(chalk.cyan('Examples:'));
   console.log(chalk.gray('  $ devsum setup                    # Interactive configuration'));
   console.log(chalk.gray('  $ devsum report --since 7d        # Report for last 7 days'));
-  console.log(chalk.gray('  $ devsum report --author "John"   # Filter by author'));
+  console.log(chalk.gray('  $ devsum analytics --since 30d    # Interactive analytics dashboard'));
   console.log(chalk.gray('  $ devsum commit --auto            # Generate and commit with AI'));
   console.log(chalk.gray('  $ devsum update                   # Check for updates'));
   console.log(chalk.gray('  $ devsum login                    # View free mode info'));
@@ -61,12 +63,13 @@ program.exitOverride(err => {
 program.on('command:*', operands => {
   console.error(chalk.red(`❌ Unknown command: ${operands[0]}`));
   console.log(chalk.blue('💡 Available commands:'));
-  console.log(chalk.gray('  setup   - Configure DevSum settings'));
-  console.log(chalk.gray('  report  - Generate accomplishment reports'));
-  console.log(chalk.gray('  commit  - Generate AI commit messages'));
-  console.log(chalk.gray('  update  - Check for DevSum updates'));
-  console.log(chalk.gray('  login   - View free mode information'));
-  console.log(chalk.gray('  --help  - Show help information'));
+  console.log(chalk.gray('  setup     - Configure DevSum settings'));
+  console.log(chalk.gray('  report    - Generate accomplishment reports'));
+  console.log(chalk.gray('  analytics - Interactive analytics dashboard'));
+  console.log(chalk.gray('  commit    - Generate AI commit messages'));
+  console.log(chalk.gray('  update    - Check for DevSum updates'));
+  console.log(chalk.gray('  login     - View free mode information'));
+  console.log(chalk.gray('  --help    - Show help information'));
   process.exit(1);
 });
 

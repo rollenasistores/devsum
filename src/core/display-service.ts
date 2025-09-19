@@ -23,6 +23,17 @@ export class DisplayService {
 ╚═╝  ╚═╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   
 `;
 
+  private static readonly ANALYTICS_ICON = `
+ $$$$$$\  $$\   $$\  $$$$$$\  $$\   $$\     $$\ $$$$$$$$\ $$$$$$\  $$$$$$\   $$$$$$\  
+$$  __$$\ $$$\  $$ |$$  __$$\ $$ |  \$$\   $$  |\__$$  __|\_$$  _|$$  __$$\ $$  __$$\ 
+$$ /  $$ |$$$$\ $$ |$$ /  $$ |$$ |   \$$\ $$  /    $$ |     $$ |  $$ /  \__|$$ /  \__|
+$$$$$$$$ |$$ $$\$$ |$$$$$$$$ |$$ |    \$$$$  /     $$ |     $$ |  $$ |      \$$$$$$\  
+$$  __$$ |$$ \$$$$ |$$  __$$ |$$ |     \$$  /      $$ |     $$ |  $$ |       \____$$\ 
+$$ |  $$ |$$ |\$$$ |$$ |  $$ |$$ |      $$ |       $$ |     $$ |  $$ |  $$\ $$\   $$ |
+$$ |  $$ |$$ | \$$ |$$ |  $$ |$$$$$$$$\ $$ |       $$ |   $$$$$$\ \$$$$$$  |\$$$$$$  |
+\__|  \__|\__|  \__|\__|  \__|\________|\__|       \__|   \______| \______/  \______/ 
+`;
+
   private static readonly ASCII_LOGO = `
 ██████╗ ███████╗██╗   ██╗███████╗██╗   ██╗███╗   ███╗
 ██╔══██╗██╔════╝██║   ██║██╔════╝██║   ██║████╗ ████║
@@ -51,6 +62,17 @@ export class DisplayService {
     console.log(chalk.yellow.bold(this.REPORT_ICON));
     console.log(chalk.gray('          AI-Powered Git Accomplishment Reports'));
     console.log(chalk.blue('═'.repeat(55)));
+    console.log();
+  }
+
+  /**
+   * Display analytics command header
+   */
+  public static displayAnalyticsHeader(): void {
+    console.clear();
+    console.log(chalk.cyan.bold(this.ANALYTICS_ICON));
+    console.log(chalk.gray('          Interactive Analytics Dashboard & Insights'));
+    console.log(chalk.blue('═'.repeat(65)));
     console.log();
   }
 

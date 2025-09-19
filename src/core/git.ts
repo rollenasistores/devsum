@@ -1,127 +1,209 @@
 import { simpleGit, SimpleGit } from 'simple-git';
-import { GitCommit, StagedChanges } from '../types/index.js';
+import {
+  GitCommit,
+  StagedChanges,
+  BranchInfo,
+  RepositoryStats,
+  ChangesSummary,
+  UnstagedChanges,
+  BranchesInfo,
+  GitUserConfig,
+  FileChangeInfo,
+  FileChangeType,
+} from '../types/index.js';
 
+/**
+ * Git service for repository operations
+ * Handles git commands and data extraction
+ */
 export class GitService {
-  private git: SimpleGit;
+  private readonly git: SimpleGit;
 
   constructor(baseDir?: string) {
     this.git = simpleGit(baseDir || process.cwd());
   }
 
-  async getCommits(since?: string, until?: string, author?: string): Promise<GitCommit[]> {
-    // Validate dates before using them
-    if (since && !this.isValidDate(since)) {
-      throw new Error(`Invalid 'since' date format: ${since}. Use YYYY-MM-DD or relative dates like 7d, 2w, 1m`);
-    }
-    
-    if (until && !this.isValidDate(until)) {
-      throw new Error(`Invalid 'until' date format: ${until}. Use YYYY-MM-DD format`);
-    }
+  /**
+   * Get git commits with optional filtering
+   */
+  public async getCommits(
+    since?: string,
+    until?: string,
+    author?: string
+  ): Promise<readonly GitCommit[]> {
+    this.validateDateFilters(since, until);
 
-    // Build git log command with raw arguments
-    const args = ['log', '--max-count=100', '--pretty=format:%H|%ai|%s|%an <%ae>'];
-
-    if (since) {
-      // Convert 'today' to specific date string for consistent behavior
-      const sinceDate = since.toLowerCase() === 'today' 
-        ? new Date().toISOString().split('T')[0] + ' 00:00:00'
-        : since;
-      args.push(`--since=${sinceDate}`);
-    }
-    
-    if (until) {
-      // Convert 'today' to specific date string for consistent behavior
-      const untilDate = until.toLowerCase() === 'today'
-        ? new Date().toISOString().split('T')[0] + ' 23:59:59'
-        : until;
-      args.push(`--until=${untilDate}`);
-    }
-    
-    if (author) {
-      // FIX: Use single argument format for author
-      args.push(`--author=${author}`);
-    }
+    const args = this.buildGitLogArgs(since, until, author);
 
     try {
-      // Execute raw git command
       const result = await this.git.raw(args);
-      
-      // FIX: Handle empty result case
-      if (!result || !result.trim()) {
+
+      if (!result?.trim()) {
         return [];
       }
-      
-      const lines = result.trim().split('\n').filter(line => line.trim());
-      
-      const commits: GitCommit[] = [];
-      
-      for (const line of lines) {
-        const parts = line.split('|');
-        if (parts.length >= 4) {
-          const hash = parts[0];
-          const date = parts[1];
-          const message = parts[2];
-          const authorInfo = parts[3];
-          
-          try {
-            // Get file changes and stats for each commit
-            const show = await this.git.show([
-              hash,
-              '--name-only',
-              '--pretty=format:'
-            ]);
-            
-            const files = show.split('\n').filter(line => line.trim().length > 0);
-            
-            // Get commit stats (insertions/deletions)
-            let insertions = 0;
-            let deletions = 0;
-            
-            try {
-              const stats = await this.git.raw([
-                'show',
-                '--format=',
-                '--numstat',
-                hash
-              ]);
-              
-              const statLines = stats.trim().split('\n').filter(line => line.trim());
-              for (const statLine of statLines) {
-                const [add, del] = statLine.split('\t');
-                if (add !== '-') insertions += parseInt(add) || 0;
-                if (del !== '-') deletions += parseInt(del) || 0;
-              }
-            } catch (error) {
-              // Stats are optional, continue without them
-            }
-            
-            commits.push({
-              hash,
-              date,
-              message,
-              author: authorInfo,
-              files,
-              insertions,
-              deletions,
-            });
-          } catch (error) {
-            // FIX: Skip commits that fail to process but continue with others
-            console.warn(`Warning: Failed to process commit ${hash}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          }
-        }
-      }
 
-      return commits;
+      const lines = result
+        .trim()
+        .split('\n')
+        .filter(line => line.trim());
+      return await this.processCommitLines(lines);
     } catch (error) {
-      // FIX: Provide more helpful error messages
-      if (error instanceof Error && error.message.includes('bad revision')) {
-        throw new Error(`Invalid date range or no commits found for the specified criteria. Check your --since and --until dates.`);
-      }
-      throw new Error(`Failed to get git commits: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw this.handleGitError(error);
     }
   }
 
-  async isGitRepository(): Promise<boolean> {
+  /**
+   * Validate date filters
+   */
+  private validateDateFilters(since?: string, until?: string): void {
+    if (since && !this.isValidDate(since)) {
+      throw new Error(
+        `Invalid 'since' date format: ${since}. Use YYYY-MM-DD or relative dates like 7d, 2w, 1m`
+      );
+    }
+
+    if (until && !this.isValidDate(until)) {
+      throw new Error(`Invalid 'until' date format: ${until}. Use YYYY-MM-DD format`);
+    }
+  }
+
+  /**
+   * Build git log command arguments
+   */
+  private buildGitLogArgs(since?: string, until?: string, author?: string): string[] {
+    const args = ['log', '--max-count=100', '--pretty=format:%H|%ai|%s|%an <%ae>'];
+
+    if (since) {
+      const sinceDate = this.normalizeDate(since, '00:00:00');
+      args.push(`--since=${sinceDate}`);
+    }
+
+    if (until) {
+      const untilDate = this.normalizeDate(until, '23:59:59');
+      args.push(`--until=${untilDate}`);
+    }
+
+    if (author) {
+      args.push(`--author=${author}`);
+    }
+
+    return args;
+  }
+
+  /**
+   * Normalize date string for git
+   */
+  private normalizeDate(date: string, time: string): string {
+    return date.toLowerCase() === 'today'
+      ? `${new Date().toISOString().split('T')[0]} ${time}`
+      : date;
+  }
+
+  /**
+   * Process commit lines from git log
+   */
+  private async processCommitLines(lines: string[]): Promise<readonly GitCommit[]> {
+    const commits: GitCommit[] = [];
+
+    for (const line of lines) {
+      const commit = await this.processCommitLine(line);
+      if (commit) {
+        commits.push(commit);
+      }
+    }
+
+    return commits;
+  }
+
+  /**
+   * Process a single commit line
+   */
+  private async processCommitLine(line: string): Promise<GitCommit | null> {
+    const parts = line.split('|');
+    if (parts.length < 4) {
+      return null;
+    }
+
+    const [hash, date, message, authorInfo] = parts;
+
+    if (!hash || !date || !message || !authorInfo) {
+      return null;
+    }
+
+    try {
+      const files = await this.getCommitFiles(hash);
+      const stats = await this.getCommitStats(hash);
+
+      return {
+        hash,
+        date,
+        message,
+        author: authorInfo,
+        files: [...files],
+        insertions: stats.insertions,
+        deletions: stats.deletions,
+      };
+    } catch (error) {
+      console.warn(
+        `Warning: Failed to process commit ${hash}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Get files changed in a commit
+   */
+  private async getCommitFiles(hash: string): Promise<readonly string[]> {
+    const show = await this.git.show([hash, '--name-only', '--pretty=format:']);
+
+    return show.split('\n').filter(line => line.trim().length > 0);
+  }
+
+  /**
+   * Get commit statistics
+   */
+  private async getCommitStats(hash: string): Promise<{ insertions: number; deletions: number }> {
+    try {
+      const stats = await this.git.raw(['show', '--format=', '--numstat', hash]);
+
+      let insertions = 0;
+      let deletions = 0;
+
+      const statLines = stats
+        .trim()
+        .split('\n')
+        .filter(line => line.trim());
+      for (const statLine of statLines) {
+        const [add, del] = statLine.split('\t');
+        if (add && add !== '-') insertions += parseInt(add) || 0;
+        if (del && del !== '-') deletions += parseInt(del) || 0;
+      }
+
+      return { insertions, deletions };
+    } catch {
+      return { insertions: 0, deletions: 0 };
+    }
+  }
+
+  /**
+   * Handle git errors
+   */
+  private handleGitError(error: unknown): Error {
+    if (error instanceof Error && error.message.includes('bad revision')) {
+      return new Error(
+        'Invalid date range or no commits found for the specified criteria. Check your --since and --until dates.'
+      );
+    }
+    return new Error(
+      `Failed to get git commits: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+
+  /**
+   * Check if current directory is a git repository
+   */
+  public async isGitRepository(): Promise<boolean> {
     try {
       await this.git.status();
       return true;
@@ -130,11 +212,14 @@ export class GitService {
     }
   }
 
-  async getCurrentBranch(): Promise<string> {
+  /**
+   * Get current branch name
+   */
+  public async getCurrentBranch(): Promise<string> {
     try {
       const status = await this.git.status();
       return status.current || 'unknown';
-    } catch (error) {
+    } catch {
       return 'unknown';
     }
   }
@@ -142,68 +227,55 @@ export class GitService {
   /**
    * Get all unique authors from the repository
    */
-  async getAuthors(since?: string): Promise<string[]> {
+  public async getAuthors(since?: string): Promise<readonly string[]> {
     try {
-      const args = ['log', '--pretty=format:%an <%ae>'];
-      
-      if (since) {
-        // Convert 'today' to specific date string for consistent behavior
-        const sinceDate = since.toLowerCase() === 'today' 
-          ? new Date().toISOString().split('T')[0] + ' 00:00:00'
-          : since;
-        args.push(`--since=${sinceDate}`);
-      }
-      
+      const args = this.buildAuthorsArgs(since);
       const result = await this.git.raw(args);
-      const authors = result.trim().split('\n')
-        .filter(line => line.trim())
-        .filter((author, index, array) => array.indexOf(author) === index) // Remove duplicates
-        .sort();
-      
-      return authors;
-    } catch (error) {
+
+      return this.extractUniqueAuthors(result);
+    } catch {
       return [];
     }
   }
 
   /**
+   * Build arguments for authors query
+   */
+  private buildAuthorsArgs(since?: string): string[] {
+    const args = ['log', '--pretty=format:%an <%ae>'];
+
+    if (since) {
+      const sinceDate = this.normalizeDate(since, '00:00:00');
+      args.push(`--since=${sinceDate}`);
+    }
+
+    return args;
+  }
+
+  /**
+   * Extract unique authors from git log result
+   */
+  private extractUniqueAuthors(result: string): readonly string[] {
+    return result
+      .trim()
+      .split('\n')
+      .filter(line => line.trim())
+      .filter((author, index, array) => array.indexOf(author) === index)
+      .sort();
+  }
+
+  /**
    * Get repository statistics
    */
-  async getRepoStats(): Promise<{
-    totalCommits: number;
-    authors: number;
-    branches: number;
-    firstCommit?: string;
-    lastCommit?: string;
-  }> {
+  public async getRepoStats(): Promise<RepositoryStats> {
     try {
-      // Total commits
-      const totalCommitsResult = await this.git.raw(['rev-list', '--all', '--count']);
-      const totalCommits = parseInt(totalCommitsResult.trim()) || 0;
-
-      // All authors
-      const authors = await this.getAuthors();
-      
-      // All branches
-      const branchesResult = await this.git.raw(['branch', '-a']);
-      const branches = branchesResult.split('\n')
-        .filter(line => line.trim())
-        .filter(line => !line.includes('->')) // Remove symbolic refs
-        .length;
-
-      // First and last commit dates
-      let firstCommit: string | undefined;
-      let lastCommit: string | undefined;
-
-      try {
-        const firstCommitResult = await this.git.raw(['log', '--reverse', '--pretty=format:%ai', '--max-count=1']);
-        firstCommit = firstCommitResult.trim();
-      } catch {}
-
-      try {
-        const lastCommitResult = await this.git.raw(['log', '--pretty=format:%ai', '--max-count=1']);
-        lastCommit = lastCommitResult.trim();
-      } catch {}
+      const [totalCommits, authors, branches, firstCommit, lastCommit] = await Promise.all([
+        this.getTotalCommits(),
+        this.getAuthors(),
+        this.getBranchCount(),
+        this.getFirstCommitDate(),
+        this.getLastCommitDate(),
+      ]);
 
       return {
         totalCommits,
@@ -212,7 +284,7 @@ export class GitService {
         firstCommit,
         lastCommit,
       };
-    } catch (error) {
+    } catch {
       return {
         totalCommits: 0,
         authors: 0,
@@ -222,32 +294,137 @@ export class GitService {
   }
 
   /**
-   * FIX: Enhanced date validation with ISO timestamp support
+   * Get total commit count
    */
-  isValidDate(dateString: string): boolean {
+  private async getTotalCommits(): Promise<number> {
+    try {
+      const result = await this.git.raw(['rev-list', '--all', '--count']);
+      return parseInt(result.trim()) || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Get branch count
+   */
+  private async getBranchCount(): Promise<number> {
+    try {
+      const result = await this.git.raw(['branch', '-a']);
+      return result
+        .split('\n')
+        .filter(line => line.trim())
+        .filter(line => !line.includes('->')).length;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Get first commit date
+   */
+  private async getFirstCommitDate(): Promise<string | undefined> {
+    try {
+      const result = await this.git.raw([
+        'log',
+        '--reverse',
+        '--pretty=format:%ai',
+        '--max-count=1',
+      ]);
+      return result.trim() || undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Get last commit date
+   */
+  private async getLastCommitDate(): Promise<string | undefined> {
+    try {
+      const result = await this.git.raw(['log', '--pretty=format:%ai', '--max-count=1']);
+      return result.trim() || undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Validate date string format
+   */
+  public isValidDate(dateString: string): boolean {
     // Check for relative dates like 7d, 2w, 1m, 3y
-    if (dateString.match(/^\d+[dwmy]$/)) {
+    if (this.isRelativeDate(dateString)) {
       return true;
     }
-    
-    // Check for "yesterday", "today", etc.
-    if (['yesterday', 'today', 'now'].includes(dateString.toLowerCase())) {
+
+    // Check for special keywords
+    if (this.isSpecialDate(dateString)) {
       return true;
     }
-    
+
     // Check for ISO dates (YYYY-MM-DD)
-    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const date = new Date(dateString);
-      return !isNaN(date.getTime());
+    if (this.isISODate(dateString)) {
+      return this.isValidISODate(dateString);
     }
-    
-    // Check for ISO timestamps (YYYY-MM-DDTHH:mm:ss.sssZ)
-    if (dateString.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/)) {
-      const date = new Date(dateString);
-      return !isNaN(date.getTime());
+
+    // Check for ISO timestamps
+    if (this.isISOTimestamp(dateString)) {
+      return this.isValidISOTimestamp(dateString);
     }
-    
+
     // Check for other common date formats
+    return this.isValidGenericDate(dateString);
+  }
+
+  /**
+   * Check if string is a relative date
+   */
+  private isRelativeDate(dateString: string): boolean {
+    return /^\d+[dwmy]$/.test(dateString);
+  }
+
+  /**
+   * Check if string is a special date keyword
+   */
+  private isSpecialDate(dateString: string): boolean {
+    return ['yesterday', 'today', 'now'].includes(dateString.toLowerCase());
+  }
+
+  /**
+   * Check if string is an ISO date
+   */
+  private isISODate(dateString: string): boolean {
+    return /^\d{4}-\d{2}-\d{2}$/.test(dateString);
+  }
+
+  /**
+   * Check if string is an ISO timestamp
+   */
+  private isISOTimestamp(dateString: string): boolean {
+    return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/.test(dateString);
+  }
+
+  /**
+   * Validate ISO date
+   */
+  private isValidISODate(dateString: string): boolean {
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+  }
+
+  /**
+   * Validate ISO timestamp
+   */
+  private isValidISOTimestamp(dateString: string): boolean {
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+  }
+
+  /**
+   * Validate generic date
+   */
+  private isValidGenericDate(dateString: string): boolean {
     const date = new Date(dateString);
     return !isNaN(date.getTime());
   }
@@ -255,11 +432,13 @@ export class GitService {
   /**
    * Get current user's git config
    */
-  async getCurrentUser(): Promise<{ name?: string; email?: string }> {
+  public async getCurrentUser(): Promise<GitUserConfig> {
     try {
-      const name = await this.git.raw(['config', 'user.name']).catch(() => '');
-      const email = await this.git.raw(['config', 'user.email']).catch(() => '');
-      
+      const [name, email] = await Promise.all([
+        this.git.raw(['config', 'user.name']).catch(() => ''),
+        this.git.raw(['config', 'user.email']).catch(() => ''),
+      ]);
+
       return {
         name: name.trim() || undefined,
         email: email.trim() || undefined,
@@ -272,161 +451,226 @@ export class GitService {
   /**
    * Get staged changes for commit message generation
    */
-  async getStagedChanges(): Promise<StagedChanges> {
+  public async getStagedChanges(): Promise<StagedChanges> {
     try {
-      // Get staged files
-      const stagedResult = await this.git.raw(['diff', '--cached', '--name-only']);
-      const stagedFiles = stagedResult.trim().split('\n').filter(file => file.trim());
-
-      // Get status for file categorization
-      const statusResult = await this.git.status();
-      const modifiedFiles = statusResult.modified || [];
-      const addedFiles = statusResult.created || [];
-      const deletedFiles = statusResult.deleted || [];
-
-      // Get diff stats
-      const diffStatsResult = await this.git.raw(['diff', '--cached', '--numstat']);
-      let insertions = 0;
-      let deletions = 0;
-
-      if (diffStatsResult.trim()) {
-        const statLines = diffStatsResult.trim().split('\n');
-        for (const line of statLines) {
-          const [add, del] = line.split('\t');
-          if (add !== '-') insertions += parseInt(add) || 0;
-          if (del !== '-') deletions += parseInt(del) || 0;
-        }
-      }
+      const [stagedFiles, status, diffStats] = await Promise.all([
+        this.getStagedFiles(),
+        this.git.status(),
+        this.getDiffStats(),
+      ]);
 
       return {
-        stagedFiles,
-        modifiedFiles,
-        addedFiles,
-        deletedFiles,
-        diffStats: {
-          insertions,
-          deletions
-        }
+        stagedFiles: [...stagedFiles],
+        modifiedFiles: status.modified || [],
+        addedFiles: status.created || [],
+        deletedFiles: status.deleted || [],
+        diffStats,
       };
     } catch (error) {
-      throw new Error(`Failed to get staged changes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get staged changes: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
+  }
+
+  /**
+   * Get staged files list
+   */
+  private async getStagedFiles(): Promise<readonly string[]> {
+    const result = await this.git.raw(['diff', '--cached', '--name-only']);
+    return result
+      .trim()
+      .split('\n')
+      .filter(file => file.trim());
+  }
+
+  /**
+   * Get diff statistics
+   */
+  private async getDiffStats(): Promise<{ insertions: number; deletions: number }> {
+    const result = await this.git.raw(['diff', '--cached', '--numstat']);
+
+    if (!result.trim()) {
+      return { insertions: 0, deletions: 0 };
+    }
+
+    let insertions = 0;
+    let deletions = 0;
+
+    const statLines = result.trim().split('\n');
+    for (const line of statLines) {
+      const [add, del] = line.split('\t');
+      if (add && add !== '-') insertions += parseInt(add) || 0;
+      if (del && del !== '-') deletions += parseInt(del) || 0;
+    }
+
+    return { insertions, deletions };
   }
 
   /**
    * Commit changes with a message
    */
-  async commitChanges(message: string): Promise<void> {
+  public async commitChanges(message: string): Promise<void> {
     try {
       await this.git.commit(message);
     } catch (error) {
-      throw new Error(`Failed to commit changes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to commit changes: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Get diff content for staged files
    */
-  async getStagedDiff(): Promise<string> {
+  public async getStagedDiff(): Promise<string> {
     try {
-      const diffResult = await this.git.raw(['diff', '--cached']);
-      return diffResult;
+      return await this.git.raw(['diff', '--cached']);
     } catch (error) {
-      throw new Error(`Failed to get staged diff: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get staged diff: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Get file changes summary for AI analysis
    */
-  async getChangesSummary(): Promise<{
-    files: string[];
-    changes: { [file: string]: { insertions: number; deletions: number; type: string } };
-    totalInsertions: number;
-    totalDeletions: number;
-  }> {
+  public async getChangesSummary(): Promise<ChangesSummary> {
     try {
       const stagedChanges = await this.getStagedChanges();
-      const changes: { [file: string]: { insertions: number; deletions: number; type: string } } = {};
-      
-      let totalInsertions = 0;
-      let totalDeletions = 0;
+      const changes = await this.analyzeFileChanges(stagedChanges);
 
-      // Get detailed stats for each file
-      for (const file of stagedChanges.stagedFiles) {
-        try {
-          const fileStats = await this.git.raw(['diff', '--cached', '--numstat', '--', file]);
-          const lines = fileStats.trim().split('\n');
-          
-          let insertions = 0;
-          let deletions = 0;
-          
-          for (const line of lines) {
-            const [add, del] = line.split('\t');
-            if (add !== '-') insertions += parseInt(add) || 0;
-            if (del !== '-') deletions += parseInt(del) || 0;
-          }
-
-          // Determine file type
-          let type = 'modified';
-          if (stagedChanges.addedFiles.includes(file)) {
-            type = 'added';
-          } else if (stagedChanges.deletedFiles.includes(file)) {
-            type = 'deleted';
-          }
-
-          changes[file] = { insertions, deletions, type };
-          totalInsertions += insertions;
-          totalDeletions += deletions;
-        } catch (error) {
-          // Skip files that can't be analyzed
-          changes[file] = { insertions: 0, deletions: 0, type: 'unknown' };
-        }
-      }
+      const totalInsertions = Object.values(changes).reduce(
+        (sum, change) => sum + change.insertions,
+        0
+      );
+      const totalDeletions = Object.values(changes).reduce(
+        (sum, change) => sum + change.deletions,
+        0
+      );
 
       return {
         files: stagedChanges.stagedFiles,
         changes,
         totalInsertions,
-        totalDeletions
+        totalDeletions,
       };
     } catch (error) {
-      throw new Error(`Failed to get changes summary: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get changes summary: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
+  }
+
+  /**
+   * Analyze file changes for each staged file
+   */
+  private async analyzeFileChanges(
+    stagedChanges: StagedChanges
+  ): Promise<Readonly<Record<string, FileChangeInfo>>> {
+    const changes: Record<string, FileChangeInfo> = {};
+
+    for (const file of stagedChanges.stagedFiles) {
+      try {
+        const fileStats = await this.getFileStats(file);
+        const fileType = this.determineFileType(file, stagedChanges);
+
+        changes[file] = {
+          insertions: fileStats.insertions,
+          deletions: fileStats.deletions,
+          type: fileType as FileChangeType,
+        };
+      } catch {
+        changes[file] = { insertions: 0, deletions: 0, type: 'unknown' };
+      }
+    }
+
+    return changes;
+  }
+
+  /**
+   * Get file statistics
+   */
+  private async getFileStats(file: string): Promise<{ insertions: number; deletions: number }> {
+    const result = await this.git.raw(['diff', '--cached', '--numstat', '--', file]);
+    const lines = result.trim().split('\n');
+
+    let insertions = 0;
+    let deletions = 0;
+
+    for (const line of lines) {
+      const [add, del] = line.split('\t');
+      if (add && add !== '-') insertions += parseInt(add) || 0;
+      if (del && del !== '-') deletions += parseInt(del) || 0;
+    }
+
+    return { insertions, deletions };
+  }
+
+  /**
+   * Determine file change type
+   */
+  private determineFileType(file: string, stagedChanges: StagedChanges): FileChangeType {
+    if (stagedChanges.addedFiles.includes(file)) {
+      return 'added';
+    }
+    if (stagedChanges.deletedFiles.includes(file)) {
+      return 'deleted';
+    }
+    return 'modified';
   }
 
   /**
    * Get all available branches
    */
-  async getBranches(): Promise<{ local: string[]; remote: string[]; current: string }> {
+  public async getBranches(): Promise<BranchesInfo> {
     try {
-      // Get local branches
-      const localBranchesResult = await this.git.raw(['branch', '--format=%(refname:short)']);
-      const localBranches = localBranchesResult.trim().split('\n').filter(branch => branch.trim());
-
-      // Get remote branches
-      const remoteBranchesResult = await this.git.raw(['branch', '-r', '--format=%(refname:short)']);
-      const remoteBranches = remoteBranchesResult.trim().split('\n')
-        .filter(branch => branch.trim() && !branch.includes('HEAD'))
-        .map(branch => branch.replace('origin/', ''));
-
-      // Get current branch
-      const currentBranch = await this.getCurrentBranch();
+      const [localBranches, remoteBranches, currentBranch] = await Promise.all([
+        this.getLocalBranches(),
+        this.getRemoteBranches(),
+        this.getCurrentBranch(),
+      ]);
 
       return {
         local: localBranches,
         remote: remoteBranches,
-        current: currentBranch
+        current: currentBranch,
       };
     } catch (error) {
-      throw new Error(`Failed to get branches: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get branches: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
+  }
+
+  /**
+   * Get local branches
+   */
+  private async getLocalBranches(): Promise<string[]> {
+    const result = await this.git.raw(['branch', '--format=%(refname:short)']);
+    return result
+      .trim()
+      .split('\n')
+      .filter(branch => branch.trim());
+  }
+
+  /**
+   * Get remote branches
+   */
+  private async getRemoteBranches(): Promise<string[]> {
+    const result = await this.git.raw(['branch', '-r', '--format=%(refname:short)']);
+    return result
+      .trim()
+      .split('\n')
+      .filter(branch => branch.trim() && !branch.includes('HEAD'))
+      .map(branch => branch.replace('origin/', ''));
   }
 
   /**
    * Create a new branch
    */
-  async createBranch(branchName: string, checkout: boolean = true): Promise<void> {
+  public async createBranch(branchName: string, checkout: boolean = true): Promise<void> {
     try {
       if (checkout) {
         await this.git.checkoutLocalBranch(branchName);
@@ -434,40 +678,46 @@ export class GitService {
         await this.git.branch([branchName]);
       }
     } catch (error) {
-      throw new Error(`Failed to create branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to create branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Switch to an existing branch
    */
-  async switchBranch(branchName: string): Promise<void> {
+  public async switchBranch(branchName: string): Promise<void> {
     try {
       await this.git.checkout(branchName);
     } catch (error) {
-      throw new Error(`Failed to switch to branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to switch to branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Create and switch to a new branch
    */
-  async createAndSwitchBranch(branchName: string): Promise<void> {
+  public async createAndSwitchBranch(branchName: string): Promise<void> {
     try {
       await this.createBranch(branchName, true);
     } catch (error) {
-      throw new Error(`Failed to create and switch to branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to create and switch to branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Check if a branch exists
    */
-  async branchExists(branchName: string): Promise<boolean> {
+  public async branchExists(branchName: string): Promise<boolean> {
     try {
       const branches = await this.getBranches();
       return branches.local.includes(branchName) || branches.remote.includes(branchName);
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -475,101 +725,108 @@ export class GitService {
   /**
    * Get branch information
    */
-  async getBranchInfo(): Promise<{
-    current: string;
-    isClean: boolean;
-    hasStagedChanges: boolean;
-    hasUnstagedChanges: boolean;
-    lastCommit?: string;
-  }> {
+  public async getBranchInfo(): Promise<BranchInfo> {
     try {
-      const currentBranch = await this.getCurrentBranch();
-      const status = await this.git.status();
-      
-      // Get last commit info
-      let lastCommit: string | undefined;
-      try {
-        const lastCommitResult = await this.git.raw(['log', '--oneline', '-1']);
-        lastCommit = lastCommitResult.trim();
-      } catch {
-        // No commits yet
-      }
+      const [currentBranch, status, lastCommit] = await Promise.all([
+        this.getCurrentBranch(),
+        this.git.status(),
+        this.getLastCommitInfo(),
+      ]);
 
       return {
         current: currentBranch,
         isClean: status.isClean(),
         hasStagedChanges: status.staged.length > 0,
-        hasUnstagedChanges: status.modified.length > 0 || status.not_added.length > 0 || status.deleted.length > 0,
-        lastCommit
+        hasUnstagedChanges:
+          status.modified.length > 0 || status.not_added.length > 0 || status.deleted.length > 0,
+        lastCommit,
       };
     } catch (error) {
-      throw new Error(`Failed to get branch info: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get branch info: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Get last commit information
+   */
+  private async getLastCommitInfo(): Promise<string | undefined> {
+    try {
+      const result = await this.git.raw(['log', '--oneline', '-1']);
+      return result.trim() || undefined;
+    } catch {
+      return undefined;
     }
   }
 
   /**
    * Add all changes to staging area
    */
-  async addAll(): Promise<void> {
+  public async addAll(): Promise<void> {
     try {
       await this.git.add('.');
     } catch (error) {
-      throw new Error(`Failed to add all changes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to add all changes: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Add specific files to staging area
    */
-  async addFiles(files: string[]): Promise<void> {
+  public async addFiles(files: readonly string[]): Promise<void> {
     try {
-      await this.git.add(files);
+      await this.git.add([...files]);
     } catch (error) {
-      throw new Error(`Failed to add files: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to add files: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Get unstaged changes
    */
-  async getUnstagedChanges(): Promise<{
-    modified: string[];
-    untracked: string[];
-    deleted: string[];
-  }> {
+  public async getUnstagedChanges(): Promise<UnstagedChanges> {
     try {
       const status = await this.git.status();
       return {
         modified: status.modified || [],
         untracked: status.not_added || [],
-        deleted: status.deleted || []
+        deleted: status.deleted || [],
       };
     } catch (error) {
-      throw new Error(`Failed to get unstaged changes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get unstaged changes: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Push current branch to remote
    */
-  async pushBranch(branchName?: string, setUpstream: boolean = true): Promise<void> {
+  public async pushBranch(branchName?: string, setUpstream: boolean = true): Promise<void> {
     try {
-      const currentBranch = branchName || await this.getCurrentBranch();
-      
+      const currentBranch = branchName || (await this.getCurrentBranch());
+
       if (setUpstream) {
         await this.git.push(['-u', 'origin', currentBranch]);
       } else {
         await this.git.push(['origin', currentBranch]);
       }
     } catch (error) {
-      throw new Error(`Failed to push branch: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to push branch: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Check if remote exists
    */
-  async hasRemote(): Promise<boolean> {
+  public async hasRemote(): Promise<boolean> {
     try {
       const remotes = await this.git.getRemotes();
       return remotes.length > 0;

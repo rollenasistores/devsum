@@ -14,11 +14,7 @@ export interface HTMLReportMetadata {
 }
 
 export class HTMLReportGenerator {
-  generateReport(
-    report: any,
-    commits: GitCommit[],
-    metadata: HTMLReportMetadata
-  ): string {
+  generateReport(report: any, commits: GitCommit[], metadata: HTMLReportMetadata): string {
     const periodDescription = this.getPeriodDescription(metadata);
     const lengthDisplay = this.getLengthDisplay(metadata.length);
     const authorFilter = metadata.author ? ` (Author: ${metadata.author})` : '';
@@ -690,11 +686,14 @@ export class HTMLReportGenerator {
     }
 
     const accomplishments = report.accomplishments
-      .map((acc: string) => `
+      .map(
+        (acc: string) => `
         <div class="accomplishment">
             <div class="accomplishment-text">${acc}</div>
         </div>
-      `).join('');
+      `
+      )
+      .join('');
 
     return `
     <div class="section">
@@ -714,11 +713,14 @@ export class HTMLReportGenerator {
     }
 
     const improvements = report.technicalImprovements
-      .map((imp: string) => `
+      .map(
+        (imp: string) => `
         <div class="improvement">
             <div class="accomplishment-text">${imp}</div>
         </div>
-      `).join('');
+      `
+      )
+      .join('');
 
     return `
     <div class="section">
@@ -736,7 +738,9 @@ export class HTMLReportGenerator {
     const displayCommits = commits.slice(0, 15);
     const remainingCount = commits.length - 15;
 
-    const commitCards = displayCommits.map(commit => `
+    const commitCards = displayCommits
+      .map(
+        commit => `
       <div class="commit">
           <div class="commit-message">${commit.message}</div>
           <div class="commit-meta">
@@ -752,15 +756,21 @@ export class HTMLReportGenerator {
                   <span>📁</span>
                   <span>${commit.files.slice(0, 3).join(', ')}${commit.files.length > 3 ? '...' : ''}</span>
               </div>
-              ${commit.insertions || commit.deletions ? `
+              ${
+                commit.insertions || commit.deletions
+                  ? `
               <div class="commit-meta-item">
                   <span>📈</span>
                   <span>+${commit.insertions || 0} -${commit.deletions || 0}</span>
               </div>
-              ` : ''}
+              `
+                  : ''
+              }
           </div>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
 
     return `
     <div class="section">
@@ -770,11 +780,15 @@ export class HTMLReportGenerator {
         </h2>
         <div class="commits-grid">
             ${commitCards}
-            ${remainingCount > 0 ? `
+            ${
+              remainingCount > 0
+                ? `
             <div class="commit" style="text-align: center; background: #f8f9ff; border: 2px dashed #667eea;">
                 <div class="commit-message">📎 ... and ${remainingCount} more commits</div>
             </div>
-            ` : ''}
+            `
+                : ''
+            }
         </div>
     </div>`;
   }
@@ -820,24 +834,36 @@ export class HTMLReportGenerator {
         </h2>
         <div class="filters">
             <div class="filter-list">
-                ${metadata.since ? `
+                ${
+                  metadata.since
+                    ? `
                 <div class="filter-item">
                     <div class="filter-label">Since</div>
                     <div class="filter-value">${metadata.since.toLowerCase() === 'today' ? `today (${new Date().toISOString().split('T')[0]} 00:00:00 to now)` : metadata.since}</div>
                 </div>
-                ` : ''}
-                ${metadata.until ? `
+                `
+                    : ''
+                }
+                ${
+                  metadata.until
+                    ? `
                 <div class="filter-item">
                     <div class="filter-label">Until</div>
                     <div class="filter-value">${metadata.until.toLowerCase() === 'today' ? `today (${new Date().toISOString().split('T')[0]} 23:59:59)` : metadata.until}</div>
                 </div>
-                ` : ''}
-                ${metadata.author ? `
+                `
+                    : ''
+                }
+                ${
+                  metadata.author
+                    ? `
                 <div class="filter-item">
                     <div class="filter-label">Author</div>
                     <div class="filter-value">${metadata.author}</div>
                 </div>
-                ` : ''}
+                `
+                    : ''
+                }
             </div>
         </div>
     </div>`;
@@ -846,7 +872,7 @@ export class HTMLReportGenerator {
   private generateCharts(commits: GitCommit[]): string {
     const commitActivity = this.getCommitActivityData(commits);
     const authorActivity = this.getAuthorActivityData(commits);
-    
+
     return `
     <div class="section">
         <h2 class="section-title">
@@ -870,74 +896,84 @@ export class HTMLReportGenerator {
     </div>`;
   }
 
-  private getCommitActivityData(commits: GitCommit[]): Array<{label: string, value: number}> {
-    const activity: {[key: string]: number} = {};
-    
+  private getCommitActivityData(commits: GitCommit[]): Array<{ label: string; value: number }> {
+    const activity: { [key: string]: number } = {};
+
     commits.forEach(commit => {
       const date = commit.date.split('T')[0];
-      activity[date] = (activity[date] || 0) + 1;
+      if (date) {
+        activity[date] = (activity[date] || 0) + 1;
+      }
     });
-    
+
     return Object.entries(activity)
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-7) // Last 7 days
       .map(([date, count]) => ({
         label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        value: count
+        value: count,
       }));
   }
 
-  private getAuthorActivityData(commits: GitCommit[]): Array<{label: string, value: number}> {
-    const authorCounts: {[key: string]: number} = {};
-    
+  private getAuthorActivityData(commits: GitCommit[]): Array<{ label: string; value: number }> {
+    const authorCounts: { [key: string]: number } = {};
+
     commits.forEach(commit => {
       const author = commit.author.split(' <')[0]; // Remove email part
-      authorCounts[author] = (authorCounts[author] || 0) + 1;
+      if (author) {
+        authorCounts[author] = (authorCounts[author] || 0) + 1;
+      }
     });
-    
+
     return Object.entries(authorCounts)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .map(([author, count]) => ({
         label: author,
-        value: count
+        value: count,
       }));
   }
 
-  private generateBarChart(data: Array<{label: string, value: number}>): string {
-    if (data.length === 0) return '<div style="text-align: center; padding: 50px; color: #666;">No data available</div>';
-    
+  private generateBarChart(data: Array<{ label: string; value: number }>): string {
+    if (data.length === 0)
+      return '<div style="text-align: center; padding: 50px; color: #666;">No data available</div>';
+
     const maxValue = Math.max(...data.map(d => d.value));
-    
+
     return `
     <div class="bar-chart">
-        ${data.map(item => {
-          const height = (item.value / maxValue) * 100;
-          return `
+        ${data
+          .map(item => {
+            const height = (item.value / maxValue) * 100;
+            return `
             <div class="bar" style="height: ${height}%">
                 <div class="bar-value">${item.value}</div>
                 <div class="bar-label">${item.label}</div>
             </div>
           `;
-        }).join('')}
+          })
+          .join('')}
     </div>`;
   }
 
-  private generateAuthorChart(data: Array<{label: string, value: number}>): string {
-    if (data.length === 0) return '<div style="text-align: center; padding: 50px; color: #666;">No data available</div>';
-    
+  private generateAuthorChart(data: Array<{ label: string; value: number }>): string {
+    if (data.length === 0)
+      return '<div style="text-align: center; padding: 50px; color: #666;">No data available</div>';
+
     const maxValue = Math.max(...data.map(d => d.value));
-    
+
     return `
     <div class="bar-chart">
-        ${data.map(item => {
-          const height = (item.value / maxValue) * 100;
-          return `
+        ${data
+          .map(item => {
+            const height = (item.value / maxValue) * 100;
+            return `
             <div class="bar" style="height: ${height}%">
                 <div class="bar-value">${item.value}</div>
                 <div class="bar-label">${item.label.length > 10 ? item.label.substring(0, 10) + '...' : item.label}</div>
             </div>
           `;
-        }).join('')}
+          })
+          .join('')}
     </div>`;
   }
 
@@ -964,7 +1000,7 @@ export class HTMLReportGenerator {
     // Enhanced period description with today support
     if (metadata.since?.toLowerCase() === 'today') {
       const now = new Date();
-      const timeStr = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MM format
+      const timeStr = now.toTimeString().split(' ')[0]?.substring(0, 5) ?? '00:00'; // HH:MM format
       const todayDate = new Date().toISOString().split('T')[0];
       periodDescription = `Today (${todayDate} 00:00:00 to ${timeStr})`;
       if (metadata.until) {
@@ -974,9 +1010,10 @@ export class HTMLReportGenerator {
       const todayDate = new Date().toISOString().split('T')[0];
       periodDescription = periodDescription.replace('today', `today (until ${todayDate} 23:59:59)`);
     } else if (metadata.since && metadata.since.match(/^\d+[dwmy]$/)) {
-      const unit = metadata.since.slice(-1);
-      const num = metadata.since.slice(0, -1);
-      const unitName = unit === 'd' ? 'days' : unit === 'w' ? 'weeks' : unit === 'm' ? 'months' : 'years';
+      const unit = metadata.since?.slice(-1);
+      const num = metadata.since?.slice(0, -1);
+      const unitName =
+        unit === 'd' ? 'days' : unit === 'w' ? 'weeks' : unit === 'm' ? 'months' : 'years';
       periodDescription = `Last ${num} ${unitName}`;
       if (metadata.until) {
         periodDescription += ` (until ${metadata.until})`;
@@ -988,7 +1025,7 @@ export class HTMLReportGenerator {
 
   private getLengthDisplay(length?: string): string {
     if (!length || length === 'detailed') return '';
-    
+
     return `
     <div class="metadata-item">
         <div class="metadata-label">📏 Report Length</div>

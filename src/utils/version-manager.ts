@@ -16,7 +16,7 @@ export class VersionManager {
    */
   public static getVersion(): string {
     if (this.cachedVersion) return this.cachedVersion;
-    
+
     try {
       // Method 1: Try to use import.meta.url (works in ES modules)
       const __filename = fileURLToPath(import.meta.url);
@@ -97,7 +97,7 @@ export class VersionManager {
       version: this.getVersion(),
       formatted: this.getFormattedVersion(),
       isDevelopment: this.isDevelopment(),
-      withEnv: this.getVersionWithEnv()
+      withEnv: this.getVersionWithEnv(),
     };
   }
 }

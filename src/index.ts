@@ -17,7 +17,9 @@ const updateChecker = new UpdateChecker('devsum', currentVersion);
 
 program
   .name('devsum')
-  .description('🚀 AI-powered CLI tool that generates professional accomplishment reports from git commits')
+  .description(
+    '🚀 AI-powered CLI tool that generates professional accomplishment reports from git commits'
+  )
   .version(currentVersion, '-v, --version', 'display version number');
 
 // Add commands
@@ -44,7 +46,7 @@ program.on('--help', () => {
 });
 
 // Error handling
-program.exitOverride((err) => {
+program.exitOverride(err => {
   if (err.code === 'commander.help') {
     process.exit(0);
   }
@@ -56,11 +58,11 @@ program.exitOverride((err) => {
 });
 
 // Handle unknown commands
-program.on('command:*', (operands) => {
+program.on('command:*', operands => {
   console.error(chalk.red(`❌ Unknown command: ${operands[0]}`));
   console.log(chalk.blue('💡 Available commands:'));
   console.log(chalk.gray('  setup   - Configure DevSum settings'));
-  console.log(chalk.gray('  report  - Generate accomplishment reports'));  
+  console.log(chalk.gray('  report  - Generate accomplishment reports'));
   console.log(chalk.gray('  commit  - Generate AI commit messages'));
   console.log(chalk.gray('  update  - Check for DevSum updates'));
   console.log(chalk.gray('  login   - View free mode information'));
@@ -73,32 +75,35 @@ export async function runWithUpdateCheck() {
   try {
     // Check for updates in background (non-blocking)
     const updatePromise = updateChecker.checkForUpdates().catch(() => null);
-    
+
     // Parse commands first
     await program.parseAsync();
-    
+
     // Show update notification after command execution
     const updateInfo = await updatePromise;
-    
+
     // Only show update notification for main commands (not for version/help)
-    const showNotification = process.argv.length > 2 && 
-      !process.argv.includes('--version') && 
-      !process.argv.includes('-v') && 
+    const showNotification =
+      process.argv.length > 2 &&
+      !process.argv.includes('--version') &&
+      !process.argv.includes('-v') &&
       !process.argv.includes('--help') &&
       !process.argv.includes('update'); // Don't show notification on update command
-    
+
     if (showNotification && updateInfo?.hasUpdate) {
       UpdateChecker.displayUpdateNotification(updateInfo);
     }
-    
   } catch (error) {
     // Handle any unexpected errors
     if (error instanceof Error && error.message.includes('commander.')) {
       // Commander errors are handled by exitOverride
       return;
     }
-    
-    console.error(chalk.red('❌ Unexpected error:'), error instanceof Error ? error.message : 'Unknown error');
+
+    console.error(
+      chalk.red('❌ Unexpected error:'),
+      error instanceof Error ? error.message : 'Unknown error'
+    );
     process.exit(1);
   }
 }

@@ -26,25 +26,27 @@ export class CommitProcessor {
   /**
    * Process the main commit workflow
    */
-  public async processCommit(options: CommitOptions & { 
-    auto?: boolean;
-    conventional?: boolean;
-    emoji?: boolean;
-    length?: string;
-    provider?: string;
-    dryRun?: boolean;
-    noHeader?: boolean;
-    branch?: string;
-    newBranch?: string;
-    switchBranch?: string;
-    listBranches?: boolean;
-    autoBranch?: boolean;
-    autoAdd?: boolean;
-    autoPush?: boolean;
-    report?: boolean;
-  }): Promise<void> {
+  public async processCommit(
+    options: CommitOptions & {
+      auto?: boolean;
+      conventional?: boolean;
+      emoji?: boolean;
+      length?: string;
+      provider?: string;
+      dryRun?: boolean;
+      noHeader?: boolean;
+      branch?: string;
+      newBranch?: string;
+      switchBranch?: string;
+      listBranches?: boolean;
+      autoBranch?: boolean;
+      autoAdd?: boolean;
+      autoPush?: boolean;
+      report?: boolean;
+    }
+  ): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       // Validate length parameter
       const lengthError = this.validator.validateMessageLength(options.length);
@@ -81,7 +83,10 @@ export class CommitProcessor {
         process.exit(1);
       }
 
-      DisplayService.displayProgress(`Using AI provider: ${selectedProvider.name} (${selectedProvider.provider})`, true);
+      DisplayService.displayProgress(
+        `Using AI provider: ${selectedProvider.name} (${selectedProvider.provider})`,
+        true
+      );
 
       // Validate git repository
       DisplayService.displayProgress('Checking git repository...');
@@ -99,7 +104,7 @@ export class CommitProcessor {
         branch: options.branch,
         newBranch: options.newBranch,
         switchBranch: options.switchBranch,
-        autoBranch: options.autoBranch
+        autoBranch: options.autoBranch,
       });
 
       // Show branch information
@@ -110,7 +115,7 @@ export class CommitProcessor {
       // Get staged changes
       DisplayService.displayProgress('Analyzing staged changes...');
       const changesResult = await this.validator.validateStagedChanges();
-      
+
       if (!changesResult.isValid) {
         console.log();
         console.log(chalk.yellow('⚠️  No staged changes found'));
@@ -123,13 +128,16 @@ export class CommitProcessor {
       DisplayService.displayChanges(changes);
 
       // Generate AI commit message
-      DisplayService.displayAIProgress(selectedProvider.provider, selectedProvider.model || 'default');
+      DisplayService.displayAIProgress(
+        selectedProvider.provider,
+        selectedProvider.model || 'default'
+      );
       const aiService = AIService.fromProvider(selectedProvider);
       const messageLength = (options.length as 'short' | 'medium' | 'detailed') || 'medium';
       const commitMessage = await aiService.generateCommitMessage(changes, {
         conventional: options.conventional || false,
         emoji: options.emoji || false,
-        length: messageLength
+        length: messageLength,
       });
       DisplayService.displayProgress('AI analysis complete', true);
 
@@ -149,7 +157,7 @@ export class CommitProcessor {
       // Display the generated message
       DisplayService.displayCommitMessage(commitMessage, {
         conventional: options.conventional || false,
-        emoji: options.emoji || false
+        emoji: options.emoji || false,
       });
 
       // Handle auto-commit or dry-run
@@ -165,7 +173,6 @@ export class CommitProcessor {
       const processingTime = (Date.now() - startTime) / 1000;
       console.log();
       console.log(chalk.gray(`⏱️  Processing time: ${processingTime.toFixed(2)}s`));
-
     } catch (error) {
       const processingTime = (Date.now() - startTime) / 1000;
       console.log(chalk.gray(`\n⏱️  Processing time: ${processingTime.toFixed(2)}s`));
@@ -177,53 +184,8 @@ export class CommitProcessor {
   /**
    * Handle report generation for today's commits
    */
-  private async handleReportGeneration(options: CommitOptions & { 
-    auto?: boolean;
-    conventional?: boolean;
-    emoji?: boolean;
-    length?: string;
-    provider?: string;
-    dryRun?: boolean;
-    noHeader?: boolean;
-    branch?: string;
-    newBranch?: string;
-    switchBranch?: string;
-    listBranches?: boolean;
-    autoBranch?: boolean;
-    autoAdd?: boolean;
-    autoPush?: boolean;
-    report?: boolean;
-  }): Promise<void> {
-    try {
-      console.log();
-      console.log(chalk.blue('📊 Generating report for today\'s commits...'));
-      
-      // Import ReportProcessor dynamically to avoid circular dependencies
-      const { ReportProcessor } = await import('./report-processor.js');
-      const reportProcessor = new ReportProcessor();
-      
-      // Generate report for today's commits
-      await reportProcessor.processReport({
-        since: 'today',
-        length: 'detailed',
-        provider: options.provider,
-        noHeader: true
-      });
-      
-    } catch (error) {
-      console.log();
-      console.error(chalk.red('❌ Failed to generate report'));
-      console.log(chalk.yellow('Error:'), error instanceof Error ? error.message : 'Unknown error');
-      // Don't throw error, just log it and continue
-    }
-  }
-
-  /**
-   * Handle full auto workflow
-   */
-  private async handleAutoWorkflow(
-    aiService: AIService, 
-    options: CommitOptions & { 
+  private async handleReportGeneration(
+    options: CommitOptions & {
       auto?: boolean;
       conventional?: boolean;
       emoji?: boolean;
@@ -238,7 +200,53 @@ export class CommitProcessor {
       autoBranch?: boolean;
       autoAdd?: boolean;
       autoPush?: boolean;
-    }, 
+      report?: boolean;
+    }
+  ): Promise<void> {
+    try {
+      console.log();
+      console.log(chalk.blue("📊 Generating report for today's commits..."));
+
+      // Import ReportProcessor dynamically to avoid circular dependencies
+      const { ReportProcessor } = await import('./report-processor.js');
+      const reportProcessor = new ReportProcessor();
+
+      // Generate report for today's commits
+      await reportProcessor.processReport({
+        since: 'today',
+        length: 'detailed',
+        provider: options.provider,
+        noHeader: true,
+      });
+    } catch (error) {
+      console.log();
+      console.error(chalk.red('❌ Failed to generate report'));
+      console.log(chalk.yellow('Error:'), error instanceof Error ? error.message : 'Unknown error');
+      // Don't throw error, just log it and continue
+    }
+  }
+
+  /**
+   * Handle full auto workflow
+   */
+  private async handleAutoWorkflow(
+    aiService: AIService,
+    options: CommitOptions & {
+      auto?: boolean;
+      conventional?: boolean;
+      emoji?: boolean;
+      length?: string;
+      provider?: string;
+      dryRun?: boolean;
+      noHeader?: boolean;
+      branch?: string;
+      newBranch?: string;
+      switchBranch?: string;
+      listBranches?: boolean;
+      autoBranch?: boolean;
+      autoAdd?: boolean;
+      autoPush?: boolean;
+    },
     changes: StagedChanges
   ): Promise<void> {
     console.log();
@@ -266,9 +274,10 @@ export class CommitProcessor {
 
       // Step 2: Handle file adding
       const unstagedChanges = await this.gitService.getUnstagedChanges();
-      const hasUnstagedChanges = unstagedChanges.modified.length > 0 || 
-                                unstagedChanges.untracked.length > 0 || 
-                                unstagedChanges.deleted.length > 0;
+      const hasUnstagedChanges =
+        unstagedChanges.modified.length > 0 ||
+        unstagedChanges.untracked.length > 0 ||
+        unstagedChanges.deleted.length > 0;
 
       if (hasUnstagedChanges) {
         console.log();
@@ -311,14 +320,14 @@ export class CommitProcessor {
       const commitMessage = await aiService.generateCommitMessage(updatedChanges, {
         conventional: options.conventional || false,
         emoji: options.emoji || false,
-        length: messageLength
+        length: messageLength,
       });
       DisplayService.displayProgress('Commit message generated', true);
 
       // Display the generated message
       DisplayService.displayCommitMessage(commitMessage, {
         conventional: options.conventional || false,
-        emoji: options.emoji || false
+        emoji: options.emoji || false,
       });
 
       // Step 4: Commit changes
@@ -334,7 +343,11 @@ export class CommitProcessor {
         console.log(chalk.green('🎉 Commit completed!'));
         console.log(chalk.gray(`   Message: ${commitMessage}`));
         console.log(chalk.gray(`   Files: ${updatedChanges.stagedFiles.length} files`));
-        console.log(chalk.gray(`   Changes: +${updatedChanges.diffStats.insertions} -${updatedChanges.diffStats.deletions}`));
+        console.log(
+          chalk.gray(
+            `   Changes: +${updatedChanges.diffStats.insertions} -${updatedChanges.diffStats.deletions}`
+          )
+        );
 
         // Step 5: Push changes
         const hasRemote = await this.gitService.hasRemote();
@@ -363,7 +376,6 @@ export class CommitProcessor {
       if (options.report) {
         await this.handleReportGeneration(options);
       }
-
     } catch (error) {
       console.log();
       console.error(chalk.red('❌ Auto workflow failed'));
@@ -383,7 +395,7 @@ export class CommitProcessor {
     const allFiles = [
       ...unstagedChanges.modified,
       ...unstagedChanges.untracked,
-      ...unstagedChanges.deleted
+      ...unstagedChanges.deleted,
     ];
 
     if (allFiles.length === 0) {
@@ -393,14 +405,15 @@ export class CommitProcessor {
     console.log();
     console.log(chalk.blue('📁 Select files to add:'));
     allFiles.forEach((file, index) => {
-      const status = unstagedChanges.modified.includes(file) ? 'modified' :
-                    unstagedChanges.untracked.includes(file) ? 'new' : 'deleted';
+      const status = unstagedChanges.modified.includes(file)
+        ? 'modified'
+        : unstagedChanges.untracked.includes(file)
+          ? 'new'
+          : 'deleted';
       console.log(chalk.gray(`   ${index + 1}. ${file} (${status})`));
     });
 
-    const addAll = await this.askConfirmation(
-      chalk.cyan('📦 Add all files? (Y/n): ')
-    );
+    const addAll = await this.askConfirmation(chalk.cyan('📦 Add all files? (Y/n): '));
 
     if (addAll) {
       DisplayService.displayProgress('Adding all files...');
@@ -431,7 +444,7 @@ export class CommitProcessor {
       console.log(chalk.gray(gitError));
       process.exit(1);
     }
-    
+
     const branches = await this.branchManager.getAllBranches();
     DisplayService.displayBranches(branches);
   }
@@ -440,19 +453,21 @@ export class CommitProcessor {
    * Handle auto-branch generation workflow
    */
   private async handleAutoBranchGeneration(
-    aiService: AIService, 
-    changes: StagedChanges, 
+    aiService: AIService,
+    changes: StagedChanges,
     commitMessage: string
   ): Promise<void> {
     DisplayService.displayProgress('Generating branch name...');
     const generatedBranchName = await aiService.generateBranchName(changes);
     DisplayService.displayProgress('Branch name generated', true);
-    
+
     // Show proposal and ask for confirmation
     DisplayService.displayAutoBranchProposal(generatedBranchName, commitMessage, changes);
-    
-    const shouldProceed = await this.askConfirmation(chalk.cyan('🤔 Do you want to proceed with this branch and commit? (Y/n): '));
-    
+
+    const shouldProceed = await this.askConfirmation(
+      chalk.cyan('🤔 Do you want to proceed with this branch and commit? (Y/n): ')
+    );
+
     if (!shouldProceed) {
       console.log();
       console.log(chalk.yellow('❌ Operation cancelled by user'));
@@ -464,9 +479,12 @@ export class CommitProcessor {
   /**
    * Generate and create branch for auto-branch mode
    */
-  private async generateAndCreateBranch(aiService: AIService, changes: StagedChanges): Promise<string> {
+  private async generateAndCreateBranch(
+    aiService: AIService,
+    changes: StagedChanges
+  ): Promise<string> {
     const generatedBranchName = await aiService.generateBranchName(changes);
-    
+
     // Create the branch
     DisplayService.displayProgress(`Creating branch: ${generatedBranchName}...`);
     try {
@@ -485,8 +503,8 @@ export class CommitProcessor {
    * Handle commit execution (auto-commit or dry-run)
    */
   private async handleCommitExecution(
-    commitMessage: string, 
-    changes: StagedChanges, 
+    commitMessage: string,
+    changes: StagedChanges,
     dryRun?: boolean
   ): Promise<void> {
     console.log();
@@ -503,11 +521,16 @@ export class CommitProcessor {
         console.log(chalk.green('🎉 Commit completed!'));
         console.log(chalk.gray(`   Message: ${commitMessage}`));
         console.log(chalk.gray(`   Files: ${changes.stagedFiles.length} files`));
-        console.log(chalk.gray(`   Changes: +${changes.diffStats.insertions} -${changes.diffStats.deletions}`));
+        console.log(
+          chalk.gray(`   Changes: +${changes.diffStats.insertions} -${changes.diffStats.deletions}`)
+        );
       } catch (error) {
         console.log();
         console.error(chalk.red('❌ Failed to commit changes'));
-        console.log(chalk.yellow('Error:'), error instanceof Error ? error.message : 'Unknown error');
+        console.log(
+          chalk.yellow('Error:'),
+          error instanceof Error ? error.message : 'Unknown error'
+        );
         console.log();
         console.log(chalk.blue('💡 You can still commit manually:'));
         console.log(chalk.white(`   git commit -m "${commitMessage}"`));
@@ -519,13 +542,13 @@ export class CommitProcessor {
    * Ask for user confirmation
    */
   private async askConfirmation(question: string): Promise<boolean> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const rl = readline.createInterface({
         input: process.stdin,
-        output: process.stdout
+        output: process.stdout,
       });
 
-      rl.question(question, (answer) => {
+      rl.question(question, answer => {
         rl.close();
         const response = answer.toLowerCase().trim();
         resolve(response === 'y' || response === 'yes' || response === '');
@@ -539,7 +562,11 @@ export class CommitProcessor {
   private displayNoConfigError(): void {
     console.log();
     console.error(chalk.red('❌ No configuration found'));
-    console.log(chalk.blue('💡 Run'), chalk.cyan('"devsum setup"'), chalk.blue('first to configure your settings'));
+    console.log(
+      chalk.blue('💡 Run'),
+      chalk.cyan('"devsum setup"'),
+      chalk.blue('first to configure your settings')
+    );
   }
 
   /**
@@ -556,7 +583,11 @@ export class CommitProcessor {
       });
     } else {
       console.error(chalk.red('❌ No AI providers configured'));
-      console.log(chalk.blue('💡 Run'), chalk.cyan('"devsum setup"'), chalk.blue('to configure providers'));
+      console.log(
+        chalk.blue('💡 Run'),
+        chalk.cyan('"devsum setup"'),
+        chalk.blue('to configure providers')
+      );
     }
   }
 }

@@ -26,11 +26,11 @@ export class UpdateChecker {
   private updateFile: string;
   private packageName: string;
   private currentVersion: string;
-  
+
   constructor(packageName: string, currentVersion: string) {
     this.packageName = packageName;
     this.currentVersion = currentVersion;
-    
+
     // Windows-safe path handling
     const homeDir = os.homedir();
     this.updateFile = path.join(homeDir, '.devsum-update-check');
@@ -44,9 +44,9 @@ export class UpdateChecker {
     try {
       const updateInfo = await Promise.race([
         this.performUpdateCheck(),
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)) // 5s timeout
+        new Promise<null>(resolve => setTimeout(() => resolve(null), 5000)), // 5s timeout
       ]);
-      
+
       return updateInfo;
     } catch (error) {
       // Completely silent failure on Windows to avoid console issues
@@ -57,31 +57,31 @@ export class UpdateChecker {
   private async performUpdateCheck(): Promise<UpdateInfo | null> {
     try {
       const updateInfo = await this.getUpdateInfo();
-      
+
       // Check once per day
       const lastChecked = new Date(updateInfo.lastChecked);
       const now = new Date();
       const oneDay = 24 * 60 * 60 * 1000;
-      
+
       if (now.getTime() - lastChecked.getTime() < oneDay) {
         return updateInfo;
       }
 
       // Fetch latest version from npm (with shorter timeout for Windows)
       const latestVersion = await this.fetchLatestVersion();
-      
+
       const newUpdateInfo: UpdateInfo = {
         lastChecked: now.toISOString(),
         latestVersion,
         currentVersion: this.currentVersion,
-        hasUpdate: this.isNewerVersion(latestVersion, this.currentVersion)
+        hasUpdate: this.isNewerVersion(latestVersion, this.currentVersion),
       };
 
       // Save update info (completely fire-and-forget)
       setImmediate(() => {
         this.saveUpdateInfo(newUpdateInfo).catch(() => {});
       });
-      
+
       return newUpdateInfo;
     } catch (error) {
       return null;
@@ -100,13 +100,39 @@ export class UpdateChecker {
     try {
       console.log();
       console.log(chalk.yellow('┌' + '─'.repeat(58) + '┐'));
-      console.log(chalk.yellow('│') + chalk.bold.cyan('  🚀 DevSum Update Available!') + ' '.repeat(28) + chalk.yellow('│'));
+      console.log(
+        chalk.yellow('│') +
+          chalk.bold.cyan('  🚀 DevSum Update Available!') +
+          ' '.repeat(28) +
+          chalk.yellow('│')
+      );
       console.log(chalk.yellow('│') + ' '.repeat(58) + chalk.yellow('│'));
-      console.log(chalk.yellow('│') + `  Current: ${chalk.red(updateInfo.currentVersion)}` + ' '.repeat(58 - `  Current: ${updateInfo.currentVersion}`.length) + chalk.yellow('│'));
-      console.log(chalk.yellow('│') + `  Latest:  ${chalk.green(updateInfo.latestVersion)}` + ' '.repeat(58 - `  Latest:  ${updateInfo.latestVersion}`.length) + chalk.yellow('│'));
+      console.log(
+        chalk.yellow('│') +
+          `  Current: ${chalk.red(updateInfo.currentVersion)}` +
+          ' '.repeat(58 - `  Current: ${updateInfo.currentVersion}`.length) +
+          chalk.yellow('│')
+      );
+      console.log(
+        chalk.yellow('│') +
+          `  Latest:  ${chalk.green(updateInfo.latestVersion)}` +
+          ' '.repeat(58 - `  Latest:  ${updateInfo.latestVersion}`.length) +
+          chalk.yellow('│')
+      );
       console.log(chalk.yellow('│') + ' '.repeat(58) + chalk.yellow('│'));
-      console.log(chalk.yellow('│') + chalk.white('  Update now: ') + chalk.cyan('npm install -g devsum') + ' '.repeat(16) + chalk.yellow('│'));
-      console.log(chalk.yellow('│') + chalk.gray('  Release notes: https://github.com/your-org/devsum/releases') + ' '.repeat(1) + chalk.yellow('│'));
+      console.log(
+        chalk.yellow('│') +
+          chalk.white('  Update now: ') +
+          chalk.cyan('npm install -g devsum') +
+          ' '.repeat(16) +
+          chalk.yellow('│')
+      );
+      console.log(
+        chalk.yellow('│') +
+          chalk.gray('  Release notes: https://github.com/your-org/devsum/releases') +
+          ' '.repeat(1) +
+          chalk.yellow('│')
+      );
       console.log(chalk.yellow('└' + '─'.repeat(58) + '┘'));
       console.log();
     } catch (error) {
@@ -124,7 +150,7 @@ export class UpdateChecker {
     } catch {
       return {
         lastChecked: new Date(0).toISOString(),
-        currentVersion: this.currentVersion
+        currentVersion: this.currentVersion,
       };
     }
   }
@@ -156,9 +182,9 @@ export class UpdateChecker {
       const response = await fetch(`https://registry.npmjs.org/${this.packageName}`, {
         signal: controller.signal,
         headers: {
-          'Accept': 'application/json',
-          'User-Agent': `${this.packageName}/${this.currentVersion}`
-        }
+          Accept: 'application/json',
+          'User-Agent': `${this.packageName}/${this.currentVersion}`,
+        },
       });
 
       clearTimeout(timeout);
@@ -210,13 +236,15 @@ export class UpdateChecker {
         lastChecked: new Date().toISOString(),
         latestVersion,
         currentVersion: this.currentVersion,
-        hasUpdate: this.isNewerVersion(latestVersion, this.currentVersion)
+        hasUpdate: this.isNewerVersion(latestVersion, this.currentVersion),
       };
 
       await this.saveUpdateInfo(updateInfo);
       return updateInfo;
     } catch (error) {
-      throw new Error(`Failed to check for updates: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to check for updates: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@rollenasistores/devsum",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "🚀 AI-powered CLI tool that generates professional accomplishment reports from git commits. Transform your development work into compelling narratives for performance reviews, sprint summaries, and project updates.",
   "type": "module",
   "main": "dist/index.js",
@@ -72,7 +72,7 @@
       "url": "https://github.com/rollenasistores"
     }
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rollenasistores/devsum.git"

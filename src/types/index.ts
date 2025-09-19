@@ -28,7 +28,7 @@ export interface ReportOptions {
   since?: string;
   until?: string;
   output?: string;
-  format?: 'markdown' | 'json' | 'html';
+  format?: 'markdown' | 'json' | 'html' | 'txt';
   length?: ReportLength;
 }
 
@@ -36,4 +36,39 @@ export interface AIResponse {
   summary: string;
   accomplishments: string[];
   recommendations?: string[];
+}
+
+export interface StagedChanges {
+  stagedFiles: string[];
+  modifiedFiles: string[];
+  addedFiles: string[];
+  deletedFiles: string[];
+  diffStats: {
+    insertions: number;
+    deletions: number;
+  };
+}
+
+export interface CommitOptions {
+  auto?: boolean;
+  conventional?: boolean;
+  emoji?: boolean;
+  length?: 'short' | 'medium' | 'detailed';
+  provider?: string;
+  dryRun?: boolean;
+  noHeader?: boolean;
+  branch?: string;
+  newBranch?: string;
+  switchBranch?: string;
+  listBranches?: boolean;
+  autoBranch?: boolean;
+  autoAdd?: boolean;
+  autoPush?: boolean;
+  report?: boolean;
+}
+
+export interface CommitMessageOptions {
+  conventional: boolean;
+  emoji: boolean;
+  length: 'short' | 'medium' | 'detailed';
 }

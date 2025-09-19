@@ -1,16 +1,71 @@
-// src/commands/update.ts
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { UpdateChecker } from '../core/updateChecker.js';
 import { getVersion } from '../utils/version.js';
 
-const displayUpdateStatus = (hasUpdate: boolean, currentVersion: string, latestVersion?: string) => {
-  console.log();
-  console.log(chalk.blue('═'.repeat(55)));
-  console.log(chalk.cyan.bold('📦 DevSum Update Status'));
-  console.log();
-  
-  if (hasUpdate && latestVersion) {
+/**
+ * Update command class following TypeScript guidelines
+ * Handles update checking and status display
+ */
+export class UpdateCommand {
+  private readonly updateChecker: UpdateChecker;
+  private readonly currentVersion: string;
+
+  constructor() {
+    this.currentVersion = getVersion();
+    this.updateChecker = new UpdateChecker('@rollenasistores/devsum', this.currentVersion);
+  }
+
+  /**
+   * Execute the update command
+   */
+  public async execute(options: { checkOnly?: boolean }): Promise<void> {
+    try {
+      console.log(chalk.blue('🔍 Checking for DevSum updates...'));
+      
+      // Force check for latest version
+      const updateInfo = await this.updateChecker.forceCheckForUpdates();
+      
+      this.displayUpdateStatus(
+        updateInfo.hasUpdate || false,
+        this.currentVersion,
+        updateInfo.latestVersion
+      );
+      
+      if (updateInfo.hasUpdate && !options.checkOnly) {
+        console.log();
+        console.log(chalk.yellow('💡 Run the update command above to get the latest features!'));
+      }
+      
+    } catch (error) {
+      this.displayUpdateError(error);
+      process.exit(1);
+    }
+  }
+
+  /**
+   * Display update status information
+   */
+  private displayUpdateStatus(hasUpdate: boolean, currentVersion: string, latestVersion?: string): void {
+    console.log();
+    console.log(chalk.blue('═'.repeat(55)));
+    console.log(chalk.cyan.bold('📦 DevSum Update Status'));
+    console.log();
+    
+    if (hasUpdate && latestVersion) {
+      this.displayUpdateAvailable(currentVersion, latestVersion);
+    } else {
+      this.displayUpToDate(currentVersion, latestVersion);
+    }
+    
+    console.log();
+    console.log(chalk.blue('═'.repeat(55)));
+  }
+
+  /**
+   * Display update available information
+   */
+  private displayUpdateAvailable(currentVersion: string, latestVersion: string): void {
     console.log(chalk.green('🎉 New version available!'));
     console.log();
     console.log(chalk.white(`📍 Current version: ${chalk.red(currentVersion)}`));
@@ -33,8 +88,12 @@ const displayUpdateStatus = (hasUpdate: boolean, currentVersion: string, latestV
     
     console.log(chalk.blue('📖 Release Notes:'));
     console.log(chalk.gray('   https://github.com/rollenasistores/devsum/releases'));
-    
-  } else {
+  }
+
+  /**
+   * Display up-to-date information
+   */
+  private displayUpToDate(currentVersion: string, latestVersion?: string): void {
     console.log(chalk.green('✅ You\'re up to date!'));
     console.log();
     console.log(chalk.white(`📍 Current version: ${chalk.green(currentVersion)}`));
@@ -43,49 +102,34 @@ const displayUpdateStatus = (hasUpdate: boolean, currentVersion: string, latestV
     console.log(chalk.gray('🎯 You\'re running the latest version of DevSum.'));
     console.log(chalk.gray('   Keep generating amazing reports!'));
   }
-  
-  console.log();
-  console.log(chalk.blue('═'.repeat(55)));
-};
+
+  /**
+   * Display update error
+   */
+  private displayUpdateError(error: unknown): void {
+    console.log();
+    console.log(chalk.red('═'.repeat(55)));
+    console.log(chalk.red.bold('❌ Update Check Failed'));
+    console.log();
+    console.log(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
+    console.log();
+    
+    console.log(chalk.yellow('🔧 Troubleshooting:'));
+    console.log(chalk.gray('   • Check your internet connection'));
+    console.log(chalk.gray('   • Verify npm registry access'));
+    console.log(chalk.gray('   • Try again in a few moments'));
+    console.log();
+    console.log(chalk.blue('Manual check: https://www.npmjs.com/package/@rollenasistores/devsum'));
+    console.log(chalk.red('═'.repeat(55)));
+  }
+}
+
+// Create command instance
+const updateCommandInstance = new UpdateCommand();
 
 export const updateCommand = new Command('update')
   .description('Check for DevSum updates')
   .option('--check-only', 'Only check for updates without prompting')
   .action(async (options: { checkOnly?: boolean }) => {
-    try {
-      console.log(chalk.blue('🔍 Checking for DevSum updates...'));
-      
-      const currentVersion = getVersion();
-      const updateChecker = new UpdateChecker('@rollenasistores/devsum', currentVersion);
-      
-      // Force check for latest version
-      const updateInfo = await updateChecker.forceCheckForUpdates();
-      
-      displayUpdateStatus(
-        updateInfo.hasUpdate || false,
-        currentVersion,
-        updateInfo.latestVersion
-      );
-      
-      if (updateInfo.hasUpdate && !options.checkOnly) {
-        console.log();
-        console.log(chalk.yellow('💡 Run the update command above to get the latest features!'));
-      }
-      
-    } catch (error) {
-      console.log();
-      console.log(chalk.red('═'.repeat(55)));
-      console.log(chalk.red.bold('❌ Update Check Failed'));
-      console.log();
-      console.log(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
-      console.log();
-      console.log(chalk.yellow('🔧 Troubleshooting:'));
-      console.log(chalk.gray('   • Check your internet connection'));
-      console.log(chalk.gray('   • Verify npm registry access'));
-      console.log(chalk.gray('   • Try again in a few moments'));
-      console.log();
-      console.log(chalk.blue('Manual check: https://www.npmjs.com/package/@rollenasistores/devsum'));
-      console.log(chalk.red('═'.repeat(55)));
-      process.exit(1);
-    }
+    await updateCommandInstance.execute(options);
   });

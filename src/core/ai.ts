@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
-import { Config, GitCommit, AIResponse, ReportLength, AIProvider } from '../types/index.js';
+import { Config, GitCommit, AIResponse, ReportLength, AIProvider, StagedChanges, CommitMessageOptions } from '../types/index.js';
 
 export class AIService {
   private geminiClient?: GoogleGenerativeAI;
@@ -260,5 +260,358 @@ Focus on the impact and value of the changes rather than just listing commits. G
       return 'gpt-4';
     }
     throw new Error(`Unknown provider: ${provider}`);
+  }
+
+  /**
+   * Generate commit message from staged changes
+   */
+  async generateCommitMessage(changes: StagedChanges, options: CommitMessageOptions): Promise<string> {
+    const prompt = this.buildCommitPrompt(changes, options);
+    
+    try {
+      if (this.provider === 'gemini') {
+        return await this.generateCommitWithGemini(prompt);
+      } else if (this.provider === 'claude') {
+        return await this.generateCommitWithClaude(prompt);
+      } else if (this.provider === 'openai') {
+        return await this.generateCommitWithOpenAI(prompt);
+      }
+      
+      throw new Error(`Unsupported provider: ${this.provider}`);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`AI service error: ${error.message}`);
+      }
+      throw new Error('Unknown AI service error');
+    }
+  }
+
+  /**
+   * Generate branch name from staged changes
+   */
+  async generateBranchName(changes: StagedChanges): Promise<string> {
+    const prompt = this.buildBranchNamePrompt(changes);
+    
+    try {
+      if (this.provider === 'gemini') {
+        return await this.generateBranchNameWithGemini(prompt);
+      } else if (this.provider === 'claude') {
+        return await this.generateBranchNameWithClaude(prompt);
+      } else if (this.provider === 'openai') {
+        return await this.generateBranchNameWithOpenAI(prompt);
+      }
+      
+      throw new Error(`Unsupported provider: ${this.provider}`);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`AI service error: ${error.message}`);
+      }
+      throw new Error('Unknown AI service error');
+    }
+  }
+
+  private async generateCommitWithGemini(prompt: string): Promise<string> {
+    if (!this.geminiClient) {
+      throw new Error('Gemini client not initialized');
+    }
+
+    const model = this.geminiClient.getGenerativeModel({ 
+      model: this.model || 'gemini-2.0-flash'
+    });
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    return this.parseCommitResponse(text);
+  }
+
+  private async generateCommitWithClaude(prompt: string): Promise<string> {
+    if (!this.claudeClient) {
+      throw new Error('Claude client not initialized');
+    }
+
+    const response = await this.claudeClient.messages.create({
+      model: this.model || 'claude-3-5-sonnet-20241022',
+      max_tokens: 200,
+      temperature: 0.7,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    });
+
+    // Extract text from Claude's response
+    const text = response.content
+      .filter(block => block.type === 'text')
+      .map(block => (block as any).text)
+      .join('\n');
+
+    return this.parseCommitResponse(text);
+  }
+
+  private async generateCommitWithOpenAI(prompt: string): Promise<string> {
+    if (!this.openaiClient) {
+      throw new Error('OpenAI client not initialized');
+    }
+
+    const response = await this.openaiClient.chat.completions.create({
+      model: this.model || 'gpt-4',
+      max_tokens: 200,
+      temperature: 0.7,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    });
+
+    const text = response.choices[0]?.message?.content || '';
+    return this.parseCommitResponse(text);
+  }
+
+  private buildCommitPrompt(changes: StagedChanges, options: CommitMessageOptions): string {
+    const { conventional, emoji, length } = options;
+    
+    // Build file summary
+    const fileSummary = changes.stagedFiles.map(file => {
+      const isAdded = changes.addedFiles.includes(file);
+      const isDeleted = changes.deletedFiles.includes(file);
+      const isModified = changes.modifiedFiles.includes(file);
+      
+      let status = 'modified';
+      if (isAdded) status = 'added';
+      else if (isDeleted) status = 'deleted';
+      
+      return `- ${file} (${status})`;
+    }).join('\n');
+
+    // Build change summary
+    const changeSummary = `Files changed: ${changes.stagedFiles.length}
+Insertions: +${changes.diffStats.insertions}
+Deletions: -${changes.diffStats.deletions}
+
+Files:
+${fileSummary}`;
+
+    // Build format instructions
+    let formatInstructions = '';
+    if (conventional) {
+      formatInstructions = `
+Use conventional commit format: <type>(<scope>): <description>
+Types: feat, fix, docs, style, refactor, test, chore
+Examples: feat(auth): add login validation
+         fix(api): resolve timeout issue
+         docs: update README`;
+    }
+
+    if (emoji) {
+      formatInstructions += `
+Use appropriate emojis:
+✨ feat: new features
+🐛 fix: bug fixes
+📚 docs: documentation
+🎨 style: formatting
+♻️ refactor: code changes
+✅ test: testing
+🔧 chore: maintenance`;
+    }
+
+    // Build length instructions
+    let lengthInstructions = '';
+    switch (length) {
+      case 'short':
+        lengthInstructions = 'Generate a SHORT commit message (1 line, under 50 characters)';
+        break;
+      case 'medium':
+        lengthInstructions = 'Generate a MEDIUM commit message (1-2 lines, under 72 characters per line)';
+        break;
+      case 'detailed':
+        lengthInstructions = 'Generate a DETAILED commit message (2-3 lines, with context and impact)';
+        break;
+    }
+
+    return `Generate a commit message for the following changes:
+
+${changeSummary}
+
+Requirements:
+${lengthInstructions}
+${formatInstructions}
+
+Focus on:
+- What was changed (not how)
+- Why it was changed (if obvious)
+- Impact or benefit
+- Use present tense ("add feature" not "added feature")
+- Be concise but descriptive
+
+Generate only the commit message, no additional text:`;
+  }
+
+  private parseCommitResponse(response: string): string {
+    // Clean up the response and extract the commit message
+    const lines = response.split('\n').map(line => line.trim()).filter(line => line);
+    
+    // Remove common prefixes that AI might add
+    const cleanedLines = lines.map(line => 
+      line.replace(/^(commit message:|message:|commit:)/i, '').trim()
+    );
+    
+    // Join lines and clean up
+    let message = cleanedLines.join(' ').trim();
+    
+    // Remove quotes if the entire message is wrapped in them
+    if (message.startsWith('"') && message.endsWith('"')) {
+      message = message.slice(1, -1);
+    }
+    if (message.startsWith("'") && message.endsWith("'")) {
+      message = message.slice(1, -1);
+    }
+    
+    // Ensure we have a message
+    if (!message) {
+      message = 'Update files';
+    }
+    
+    return message;
+  }
+
+  private async generateBranchNameWithGemini(prompt: string): Promise<string> {
+    if (!this.geminiClient) {
+      throw new Error('Gemini client not initialized');
+    }
+
+    const model = this.geminiClient.getGenerativeModel({ 
+      model: this.model || 'gemini-2.0-flash'
+    });
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    return this.parseBranchNameResponse(text);
+  }
+
+  private async generateBranchNameWithClaude(prompt: string): Promise<string> {
+    if (!this.claudeClient) {
+      throw new Error('Claude client not initialized');
+    }
+
+    const response = await this.claudeClient.messages.create({
+      model: this.model || 'claude-3-5-sonnet-20241022',
+      max_tokens: 50,
+      temperature: 0.7,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    });
+
+    // Extract text from Claude's response
+    const text = response.content
+      .filter(block => block.type === 'text')
+      .map(block => (block as any).text)
+      .join('\n');
+
+    return this.parseBranchNameResponse(text);
+  }
+
+  private async generateBranchNameWithOpenAI(prompt: string): Promise<string> {
+    if (!this.openaiClient) {
+      throw new Error('OpenAI client not initialized');
+    }
+
+    const response = await this.openaiClient.chat.completions.create({
+      model: this.model || 'gpt-4',
+      max_tokens: 50,
+      temperature: 0.7,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    });
+
+    const text = response.choices[0]?.message?.content || '';
+    return this.parseBranchNameResponse(text);
+  }
+
+  private buildBranchNamePrompt(changes: StagedChanges): string {
+    // Build file summary
+    const fileSummary = changes.stagedFiles.map(file => {
+      const isAdded = changes.addedFiles.includes(file);
+      const isDeleted = changes.deletedFiles.includes(file);
+      const isModified = changes.modifiedFiles.includes(file);
+      
+      let status = 'modified';
+      if (isAdded) status = 'added';
+      else if (isDeleted) status = 'deleted';
+      
+      return `- ${file} (${status})`;
+    }).join('\n');
+
+    // Build change summary
+    const changeSummary = `Files changed: ${changes.stagedFiles.length}
+Insertions: +${changes.diffStats.insertions}
+Deletions: -${changes.diffStats.deletions}
+
+Files:
+${fileSummary}`;
+
+    return `Generate a git branch name for the following changes:
+
+${changeSummary}
+
+Requirements:
+- Use conventional branch naming: type/description
+- Common types: feature, fix, hotfix, chore, docs, refactor, test
+- Description should be 2-4 words, kebab-case
+- Be descriptive but concise
+- Focus on the main purpose of the changes
+- Examples: feature/user-authentication, fix/login-bug, refactor/api-endpoints
+
+Generate only the branch name, no additional text:`;
+  }
+
+  private parseBranchNameResponse(response: string): string {
+    // Clean up the response and extract the branch name
+    let branchName = response.trim();
+    
+    // Remove common prefixes
+    branchName = branchName.replace(/^(branch name:|branch:|name:)/i, '').trim();
+    
+    // Remove quotes
+    if (branchName.startsWith('"') && branchName.endsWith('"')) {
+      branchName = branchName.slice(1, -1);
+    }
+    if (branchName.startsWith("'") && branchName.endsWith("'")) {
+      branchName = branchName.slice(1, -1);
+    }
+    
+    // Ensure it follows git branch naming conventions
+    branchName = branchName
+      .toLowerCase()
+      .replace(/[^a-z0-9\/\-_]/g, '-') // Replace invalid chars with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+    
+    // Ensure we have a valid branch name
+    if (!branchName || branchName.length < 3) {
+      branchName = 'feature/auto-generated-branch';
+    }
+    
+    // Ensure it starts with a type prefix if it doesn't already
+    if (!branchName.includes('/')) {
+      branchName = `feature/${branchName}`;
+    }
+    
+    return branchName;
   }
 }

@@ -57,6 +57,10 @@ export interface CommitOptions {
   provider?: string;
   dryRun?: boolean;
   noHeader?: boolean;
+  branch?: string;
+  newBranch?: string;
+  switchBranch?: string;
+  listBranches?: boolean;
 }
 
 export interface CommitMessageOptions {

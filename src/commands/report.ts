@@ -26,6 +26,7 @@ export class ReportCommand {
     detailed?: boolean;
     provider?: string;
     listProviders?: boolean;
+    listModels?: boolean;
   }): Promise<void> {
     await this.processor.processReport(options);
   }
@@ -49,6 +50,7 @@ export const reportCommand = new Command('report')
   .option('--today', 'Shortcut for --since today (get commits from today only)')
   .option('-p, --provider <name>', 'Use specific AI provider by name')
   .option('--list-providers', 'List available AI providers and exit')
+  .option('--list-models', 'List available models for configured providers and exit')
   .action(async (options: ReportOptions & { 
     noHeader?: boolean; 
     author?: string;
@@ -59,6 +61,7 @@ export const reportCommand = new Command('report')
     detailed?: boolean;
     provider?: string;
     listProviders?: boolean;
+    listModels?: boolean;
   }) => {
     await reportCommandInstance.execute(options);
   });

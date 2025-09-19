@@ -250,6 +250,126 @@ Focus on the impact and value of the changes rather than just listing commits. G
     return [];
   }
 
+  /**
+   * Fetch available models from the AI provider's API
+   */
+  static async fetchAvailableModels(provider: string, apiKey: string): Promise<string[]> {
+    try {
+      if (provider === 'gemini') {
+        return await AIService.fetchGeminiModels(apiKey);
+      } else if (provider === 'claude') {
+        return await AIService.fetchClaudeModels(apiKey);
+      } else if (provider === 'openai') {
+        return await AIService.fetchOpenAIModels(apiKey);
+      }
+      return [];
+    } catch (error) {
+      console.warn(`Failed to fetch models for ${provider}:`, error instanceof Error ? error.message : 'Unknown error');
+      // Fallback to static models if API fetch fails
+      return AIService.getAvailableModels(provider);
+    }
+  }
+
+  /**
+   * Fetch available Gemini models
+   */
+  private static async fetchGeminiModels(apiKey: string): Promise<string[]> {
+    const client = new GoogleGenerativeAI(apiKey);
+    
+    try {
+      // Gemini doesn't have a direct models API, so we'll return the known working models
+      // and test them to see which ones are available
+      const knownModels = [
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+        'gemini-1.5-pro',
+        'gemini-1.5-flash-8b',
+        'gemini-1.0-pro'
+      ];
+
+      const availableModels: string[] = [];
+      
+      // Test each model with a simple request
+      for (const modelName of knownModels) {
+        try {
+          const model = client.getGenerativeModel({ model: modelName });
+          await model.generateContent('test');
+          availableModels.push(modelName);
+        } catch (error) {
+          // Model not available, skip it
+          continue;
+        }
+      }
+
+      return availableModels.length > 0 ? availableModels : AIService.getAvailableModels('gemini');
+    } catch (error) {
+      return AIService.getAvailableModels('gemini');
+    }
+  }
+
+  /**
+   * Fetch available Claude models
+   */
+  private static async fetchClaudeModels(apiKey: string): Promise<string[]> {
+    const client = new Anthropic({ apiKey });
+    
+    try {
+      // Claude doesn't have a direct models API, so we'll return the known working models
+      // and test them to see which ones are available
+      const knownModels = [
+        'claude-3-5-sonnet-20241022',
+        'claude-3-5-haiku-20241022',
+        'claude-3-opus-20240229',
+        'claude-3-sonnet-20240229',
+        'claude-3-haiku-20240307'
+      ];
+
+      const availableModels: string[] = [];
+      
+      // Test each model with a simple request
+      for (const modelName of knownModels) {
+        try {
+          await client.messages.create({
+            model: modelName,
+            max_tokens: 10,
+            messages: [{ role: 'user', content: 'test' }]
+          });
+          availableModels.push(modelName);
+        } catch (error) {
+          // Model not available, skip it
+          continue;
+        }
+      }
+
+      return availableModels.length > 0 ? availableModels : AIService.getAvailableModels('claude');
+    } catch (error) {
+      return AIService.getAvailableModels('claude');
+    }
+  }
+
+  /**
+   * Fetch available OpenAI models
+   */
+  private static async fetchOpenAIModels(apiKey: string): Promise<string[]> {
+    const client = new OpenAI({ apiKey });
+    
+    try {
+      const response = await client.models.list();
+      const models = response.data
+        .filter(model => 
+          model.id.includes('gpt-4') || 
+          model.id.includes('gpt-3.5') ||
+          model.id.includes('gpt-4o')
+        )
+        .map(model => model.id)
+        .sort();
+
+      return models.length > 0 ? models : AIService.getAvailableModels('openai');
+    } catch (error) {
+      return AIService.getAvailableModels('openai');
+    }
+  }
+
   // Helper method to get default model for a provider
   static getDefaultModel(provider: string): string {
     if (provider === 'gemini') {

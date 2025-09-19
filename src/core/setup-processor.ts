@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { configManager } from './config.js';
 import { Config, AIProvider } from '../types/index.js';
 import { getVersion } from '../utils/version.js';
+import { AIService } from './ai.js';
 
 /**
  * Service responsible for processing setup operations
@@ -336,16 +337,35 @@ export class SetupProcessor {
         message: '🔑 Enter your API key:',
         validate: (input) => this.validateApiKey(input, answers.provider),
       },
+    ]);
+
+    // Fetch available models from the API
+    console.log();
+    console.log(chalk.blue('🔍 Fetching available models...'));
+    
+    const availableModels = await AIService.fetchAvailableModels(answers.provider, configAnswers.apiKey);
+    
+    if (availableModels.length === 0) {
+      console.log(chalk.yellow('⚠️  Could not fetch models, using defaults'));
+    } else {
+      console.log(chalk.green(`✅ Found ${availableModels.length} available models`));
+    }
+
+    const modelAnswers = await inquirer.prompt([
       {
-        type: 'input',
+        type: 'list',
         name: 'model',
-        message: '⚙️  AI Model (press Enter for default):',
-        default: () => {
-          if (answers.provider === 'gemini') return 'gemini-2.0-flash';
-          if (answers.provider === 'claude') return 'claude-3-5-sonnet-20241022';
-          if (answers.provider === 'openai') return 'gpt-4';
-          return 'gemini-2.0-flash';
-        },
+        message: '⚙️  Choose AI Model:',
+        choices: availableModels.length > 0 ? availableModels.map(model => ({
+          name: model,
+          value: model
+        })) : [
+          {
+            name: AIService.getDefaultModel(answers.provider) + ' (default)',
+            value: AIService.getDefaultModel(answers.provider)
+          }
+        ],
+        default: AIService.getDefaultModel(answers.provider),
       },
       {
         type: 'confirm',
@@ -359,8 +379,8 @@ export class SetupProcessor {
       name: answers.name,
       provider: answers.provider,
       apiKey: configAnswers.apiKey,
-      model: configAnswers.model,
-      isDefault: configAnswers.isDefault,
+      model: modelAnswers.model,
+      isDefault: modelAnswers.isDefault,
     };
   }
 
@@ -377,7 +397,7 @@ export class SetupProcessor {
       console.log();
       console.log(chalk.yellow('📋 Setup Requirements:'));
       console.log(chalk.gray('   • API Key: https://aistudio.google.com/app/apikey'));
-      console.log(chalk.gray('   • Models: gemini-2.0-flash (fast), gemini-1.5-pro (detailed)'));
+      console.log(chalk.gray('   • Models: Will fetch available models from your account'));
       console.log(chalk.gray('   • Free tier: 15 requests/minute'));
     } else if (provider === 'claude') {
       console.log(chalk.cyan.bold('🧠 Anthropic Claude Configuration'));
@@ -385,7 +405,7 @@ export class SetupProcessor {
       console.log();
       console.log(chalk.yellow('📋 Setup Requirements:'));
       console.log(chalk.gray('   • API Key: https://console.anthropic.com/'));
-      console.log(chalk.gray('   • Models: claude-3-5-sonnet (balanced), claude-3-opus (premium)'));
+      console.log(chalk.gray('   • Models: Will fetch available models from your account'));
       console.log(chalk.gray('   • Usage: Pay-per-use pricing'));
     } else if (provider === 'openai') {
       console.log(chalk.green.bold('🚀 OpenAI GPT Configuration'));
@@ -393,7 +413,7 @@ export class SetupProcessor {
       console.log();
       console.log(chalk.yellow('📋 Setup Requirements:'));
       console.log(chalk.gray('   • API Key: https://platform.openai.com/api-keys'));
-      console.log(chalk.gray('   • Models: gpt-4 (premium), gpt-4-turbo (fast), gpt-3.5-turbo (economical)'));
+      console.log(chalk.gray('   • Models: Will fetch available models from your account'));
       console.log(chalk.gray('   • Usage: Pay-per-use pricing'));
     }
     console.log();

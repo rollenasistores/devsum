@@ -36,6 +36,7 @@ export class ReportProcessor {
     detailed?: boolean;
     provider?: string;
     listProviders?: boolean;
+    listModels?: boolean;
   }): Promise<void> {
     const startTime = Date.now();
     
@@ -43,6 +44,12 @@ export class ReportProcessor {
       // Handle --list-providers option
       if (options.listProviders) {
         await this.handleListProviders();
+        return;
+      }
+
+      // Handle --list-models option
+      if (options.listModels) {
+        await this.handleListModels();
         return;
       }
 
@@ -226,16 +233,75 @@ export class ReportProcessor {
     console.log(chalk.cyan.bold('🤖 Available AI Providers'));
     console.log();
     
-    config.providers.forEach((provider, index) => {
+    for (const [index, provider] of config.providers.entries()) {
       const isDefault = provider.isDefault ? chalk.green(' (DEFAULT)') : '';
       console.log(chalk.white(`   ${index + 1}. ${provider.name}${isDefault}`));
       console.log(chalk.gray(`      Provider: ${provider.provider.toUpperCase()}`));
       console.log(chalk.gray(`      Model: ${provider.model || 'default'}`));
+      
+      // Fetch and display available models for this provider
+      try {
+        console.log(chalk.blue('      🔍 Fetching available models...'));
+        const availableModels = await AIService.fetchAvailableModels(provider.provider, provider.apiKey);
+        if (availableModels.length > 0) {
+          console.log(chalk.gray(`      Available models: ${availableModels.join(', ')}`));
+        } else {
+          console.log(chalk.gray('      Available models: Could not fetch (using defaults)'));
+        }
+      } catch (error) {
+        console.log(chalk.gray('      Available models: Error fetching models'));
+      }
       console.log();
-    });
+    }
     
     console.log(chalk.blue('═'.repeat(55)));
     console.log(chalk.cyan('💡 Usage: devsum report --provider <name>'));
+  }
+
+  /**
+   * Handle list models operation
+   */
+  private async handleListModels(): Promise<void> {
+    const config = await configManager.loadConfig();
+    if (!config || config.providers.length === 0) {
+      console.log();
+      console.log(chalk.yellow('⚠️  No AI providers configured'));
+      console.log(chalk.blue('💡 Run'), chalk.cyan('"devsum setup"'), chalk.blue('to configure providers'));
+      return;
+    }
+
+    console.log();
+    console.log(chalk.blue('═'.repeat(55)));
+    console.log(chalk.cyan.bold('🤖 Available AI Models'));
+    console.log();
+    
+    for (const [index, provider] of config.providers.entries()) {
+      const isDefault = provider.isDefault ? chalk.green(' (DEFAULT)') : '';
+      console.log(chalk.white(`   ${index + 1}. ${provider.name}${isDefault}`));
+      console.log(chalk.gray(`      Provider: ${provider.provider.toUpperCase()}`));
+      console.log(chalk.gray(`      Current Model: ${provider.model || 'default'}`));
+      
+      // Fetch and display available models for this provider
+      try {
+        console.log(chalk.blue('      🔍 Fetching available models...'));
+        const availableModels = await AIService.fetchAvailableModels(provider.provider, provider.apiKey);
+        if (availableModels.length > 0) {
+          console.log(chalk.green(`      ✅ Available models (${availableModels.length}):`));
+          availableModels.forEach(model => {
+            const isCurrent = model === provider.model ? chalk.green(' ← CURRENT') : '';
+            console.log(chalk.gray(`         • ${model}${isCurrent}`));
+          });
+        } else {
+          console.log(chalk.yellow('      ⚠️  Could not fetch models (using defaults)'));
+        }
+      } catch (error) {
+        console.log(chalk.red('      ❌ Error fetching models:'), error instanceof Error ? error.message : 'Unknown error');
+      }
+      console.log();
+    }
+    
+    console.log(chalk.blue('═'.repeat(55)));
+    console.log(chalk.cyan('💡 To change model: devsum setup'));
   }
 
   /**

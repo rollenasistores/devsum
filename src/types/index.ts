@@ -37,3 +37,30 @@ export interface AIResponse {
   accomplishments: string[];
   recommendations?: string[];
 }
+
+export interface StagedChanges {
+  stagedFiles: string[];
+  modifiedFiles: string[];
+  addedFiles: string[];
+  deletedFiles: string[];
+  diffStats: {
+    insertions: number;
+    deletions: number;
+  };
+}
+
+export interface CommitOptions {
+  auto?: boolean;
+  conventional?: boolean;
+  emoji?: boolean;
+  length?: 'short' | 'medium' | 'detailed';
+  provider?: string;
+  dryRun?: boolean;
+  noHeader?: boolean;
+}
+
+export interface CommitMessageOptions {
+  conventional: boolean;
+  emoji: boolean;
+  length: 'short' | 'medium' | 'detailed';
+}

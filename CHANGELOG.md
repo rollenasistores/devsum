@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/rollenasistores/devsum/compare/v1.3.0...v1.4.0) (2025-09-19)
+
+
+### Features
+
+* Add commit command to standardize commit message generation. This improves commit history consistency and development workflow. ([edd1dd1](https://github.com/rollenasistores/devsum/commit/edd1dd1a2092e848edae24dd96d75d602d5d930b))
+
 ## [1.3.0](https://github.com/rollenasistores/devsum/compare/v1.2.1...v1.3.0) (2025-09-18)
 
 

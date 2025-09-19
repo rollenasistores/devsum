@@ -29,6 +29,9 @@ export class CommitCommand {
     switchBranch?: string;
     listBranches?: boolean;
     autoBranch?: boolean;
+    autoAdd?: boolean;
+    autoPush?: boolean;
+    report?: boolean;
   }): Promise<void> {
     await this.processor.processCommit(options);
   }
@@ -39,10 +42,10 @@ const commitCommandInstance = new CommitCommand();
 
 export const commitCommand = new Command('commit')
   .description('Generate AI-powered commit messages from your changes')
-  .option('-a, --auto', 'Automatically commit with the generated message')
+  .option('-a, --auto', 'Full automation: generate branch, add files, commit with detailed messages, and optionally push')
   .option('-c, --conventional', 'Generate conventional commit format')
   .option('-e, --emoji', 'Include emojis in commit message')
-  .option('-l, --length <length>', 'Message length (short|medium|detailed)', 'medium')
+  .option('-l, --length <length>', 'Message length (short|medium|detailed). Auto mode uses detailed by default.', 'medium')
   .option('-p, --provider <name>', 'Use specific AI provider by name')
   .option('--dry-run', 'Show what would be committed without actually committing')
   .option('--no-header', 'Skip the fancy header display')
@@ -51,6 +54,9 @@ export const commitCommand = new Command('commit')
   .option('-s, --switch-branch <name>', 'Switch to an existing branch before committing')
   .option('--list-branches', 'List all available branches and exit')
   .option('--auto-branch', 'Auto-generate branch name and ask for confirmation')
+  .option('--auto-add', 'Automatically add all changes (git add .)')
+  .option('--auto-push', 'Automatically push after committing')
+  .option('--report', 'Generate a report for today\'s commits after committing')
   .action(async (options: CommitOptions & { 
     auto?: boolean;
     conventional?: boolean;
@@ -64,6 +70,9 @@ export const commitCommand = new Command('commit')
     switchBranch?: string;
     listBranches?: boolean;
     autoBranch?: boolean;
+    autoAdd?: boolean;
+    autoPush?: boolean;
+    report?: boolean;
   }) => {
     await commitCommandInstance.execute(options);
   });

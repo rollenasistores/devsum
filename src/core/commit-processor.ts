@@ -39,6 +39,9 @@ export class CommitProcessor {
     switchBranch?: string;
     listBranches?: boolean;
     autoBranch?: boolean;
+    autoAdd?: boolean;
+    autoPush?: boolean;
+    report?: boolean;
   }): Promise<void> {
     const startTime = Date.now();
     
@@ -130,6 +133,12 @@ export class CommitProcessor {
       });
       DisplayService.displayProgress('AI analysis complete', true);
 
+      // Handle auto workflow
+      if (options.auto) {
+        await this.handleAutoWorkflow(aiService, options, changes);
+        return;
+      }
+
       // Handle auto-branch generation
       let finalBranchName = branchResult.finalBranchName;
       if (options.autoBranch && !options.branch && !options.switchBranch) {
@@ -148,6 +157,11 @@ export class CommitProcessor {
         await this.handleCommitExecution(commitMessage, changes, options.dryRun);
       }
 
+      // Handle report generation
+      if (options.report && !options.dryRun) {
+        await this.handleReportGeneration(options);
+      }
+
       const processingTime = (Date.now() - startTime) / 1000;
       console.log();
       console.log(chalk.gray(`⏱️  Processing time: ${processingTime.toFixed(2)}s`));
@@ -157,6 +171,248 @@ export class CommitProcessor {
       console.log(chalk.gray(`\n⏱️  Processing time: ${processingTime.toFixed(2)}s`));
       DisplayService.displayError(error, 'Commit message generation');
       process.exit(1);
+    }
+  }
+
+  /**
+   * Handle report generation for today's commits
+   */
+  private async handleReportGeneration(options: CommitOptions & { 
+    auto?: boolean;
+    conventional?: boolean;
+    emoji?: boolean;
+    length?: string;
+    provider?: string;
+    dryRun?: boolean;
+    noHeader?: boolean;
+    branch?: string;
+    newBranch?: string;
+    switchBranch?: string;
+    listBranches?: boolean;
+    autoBranch?: boolean;
+    autoAdd?: boolean;
+    autoPush?: boolean;
+    report?: boolean;
+  }): Promise<void> {
+    try {
+      console.log();
+      console.log(chalk.blue('📊 Generating report for today\'s commits...'));
+      
+      // Import ReportProcessor dynamically to avoid circular dependencies
+      const { ReportProcessor } = await import('./report-processor.js');
+      const reportProcessor = new ReportProcessor();
+      
+      // Generate report for today's commits
+      await reportProcessor.processReport({
+        since: 'today',
+        length: 'detailed',
+        provider: options.provider,
+        noHeader: true
+      });
+      
+    } catch (error) {
+      console.log();
+      console.error(chalk.red('❌ Failed to generate report'));
+      console.log(chalk.yellow('Error:'), error instanceof Error ? error.message : 'Unknown error');
+      // Don't throw error, just log it and continue
+    }
+  }
+
+  /**
+   * Handle full auto workflow
+   */
+  private async handleAutoWorkflow(
+    aiService: AIService, 
+    options: CommitOptions & { 
+      auto?: boolean;
+      conventional?: boolean;
+      emoji?: boolean;
+      length?: string;
+      provider?: string;
+      dryRun?: boolean;
+      noHeader?: boolean;
+      branch?: string;
+      newBranch?: string;
+      switchBranch?: string;
+      listBranches?: boolean;
+      autoBranch?: boolean;
+      autoAdd?: boolean;
+      autoPush?: boolean;
+    }, 
+    changes: StagedChanges
+  ): Promise<void> {
+    console.log();
+    console.log(chalk.blue('🚀 Starting Auto Workflow...'));
+    console.log();
+
+    try {
+      // Step 1: Generate and create branch
+      DisplayService.displayProgress('🤖 Generating branch name...');
+      const generatedBranchName = await aiService.generateBranchName(changes);
+      DisplayService.displayProgress(`Generated branch: ${generatedBranchName}`, true);
+
+      // Ask for branch confirmation
+      const shouldCreateBranch = await this.askConfirmation(
+        chalk.cyan(`🌿 Create and switch to branch "${generatedBranchName}"? (Y/n): `)
+      );
+
+      if (shouldCreateBranch) {
+        DisplayService.displayProgress(`Creating branch: ${generatedBranchName}...`);
+        await this.branchManager.createOrSwitchBranch(generatedBranchName);
+        DisplayService.displayProgress(`Switched to branch: ${generatedBranchName}`, true);
+      } else {
+        console.log(chalk.yellow('⚠️  Skipping branch creation, using current branch'));
+      }
+
+      // Step 2: Handle file adding
+      const unstagedChanges = await this.gitService.getUnstagedChanges();
+      const hasUnstagedChanges = unstagedChanges.modified.length > 0 || 
+                                unstagedChanges.untracked.length > 0 || 
+                                unstagedChanges.deleted.length > 0;
+
+      if (hasUnstagedChanges) {
+        console.log();
+        console.log(chalk.yellow('📁 Unstaged changes detected:'));
+        if (unstagedChanges.modified.length > 0) {
+          console.log(chalk.gray(`   Modified: ${unstagedChanges.modified.join(', ')}`));
+        }
+        if (unstagedChanges.untracked.length > 0) {
+          console.log(chalk.gray(`   New files: ${unstagedChanges.untracked.join(', ')}`));
+        }
+        if (unstagedChanges.deleted.length > 0) {
+          console.log(chalk.gray(`   Deleted: ${unstagedChanges.deleted.join(', ')}`));
+        }
+
+        const addAll = await this.askConfirmation(
+          chalk.cyan('📦 Add all changes to staging? (Y/n): ')
+        );
+
+        if (addAll) {
+          DisplayService.displayProgress('Adding all changes...');
+          await this.gitService.addAll();
+          DisplayService.displayProgress('All changes added to staging', true);
+        } else {
+          // Let user select specific files
+          await this.handleSelectiveFileAdding(unstagedChanges);
+        }
+      }
+
+      // Step 3: Generate commit message from all staged changes
+      const updatedChanges = await this.gitService.getStagedChanges();
+      if (updatedChanges.stagedFiles.length === 0) {
+        console.log();
+        console.log(chalk.yellow('⚠️  No staged changes found'));
+        console.log(chalk.blue('💡 Use git add to stage changes first'));
+        return;
+      }
+
+      DisplayService.displayProgress('🤖 Generating commit message...');
+      const messageLength = (options.length as 'short' | 'medium' | 'detailed') || 'detailed';
+      const commitMessage = await aiService.generateCommitMessage(updatedChanges, {
+        conventional: options.conventional || false,
+        emoji: options.emoji || false,
+        length: messageLength
+      });
+      DisplayService.displayProgress('Commit message generated', true);
+
+      // Display the generated message
+      DisplayService.displayCommitMessage(commitMessage, {
+        conventional: options.conventional || false,
+        emoji: options.emoji || false
+      });
+
+      // Step 4: Commit changes
+      const shouldCommit = await this.askConfirmation(
+        chalk.cyan('💾 Commit these changes? (Y/n): ')
+      );
+
+      if (shouldCommit) {
+        DisplayService.displayProgress('Committing changes...');
+        await this.gitService.commitChanges(commitMessage);
+        DisplayService.displayProgress('Changes committed successfully', true);
+        console.log();
+        console.log(chalk.green('🎉 Commit completed!'));
+        console.log(chalk.gray(`   Message: ${commitMessage}`));
+        console.log(chalk.gray(`   Files: ${updatedChanges.stagedFiles.length} files`));
+        console.log(chalk.gray(`   Changes: +${updatedChanges.diffStats.insertions} -${updatedChanges.diffStats.deletions}`));
+
+        // Step 5: Push changes
+        const hasRemote = await this.gitService.hasRemote();
+        if (hasRemote) {
+          const shouldPush = await this.askConfirmation(
+            chalk.cyan('🚀 Push changes to remote? (Y/n): ')
+          );
+
+          if (shouldPush) {
+            DisplayService.displayProgress('Pushing to remote...');
+            await this.gitService.pushBranch();
+            DisplayService.displayProgress('Changes pushed successfully', true);
+            console.log();
+            console.log(chalk.green('🚀 Push completed!'));
+          } else {
+            console.log(chalk.yellow('⚠️  Skipping push'));
+          }
+        } else {
+          console.log(chalk.yellow('⚠️  No remote repository configured, skipping push'));
+        }
+      } else {
+        console.log(chalk.yellow('❌ Commit cancelled by user'));
+      }
+
+      // Handle report generation in auto workflow
+      if (options.report) {
+        await this.handleReportGeneration(options);
+      }
+
+    } catch (error) {
+      console.log();
+      console.error(chalk.red('❌ Auto workflow failed'));
+      console.log(chalk.yellow('Error:'), error instanceof Error ? error.message : 'Unknown error');
+      throw error;
+    }
+  }
+
+  /**
+   * Handle selective file adding
+   */
+  private async handleSelectiveFileAdding(unstagedChanges: {
+    modified: string[];
+    untracked: string[];
+    deleted: string[];
+  }): Promise<void> {
+    const allFiles = [
+      ...unstagedChanges.modified,
+      ...unstagedChanges.untracked,
+      ...unstagedChanges.deleted
+    ];
+
+    if (allFiles.length === 0) {
+      return;
+    }
+
+    console.log();
+    console.log(chalk.blue('📁 Select files to add:'));
+    allFiles.forEach((file, index) => {
+      const status = unstagedChanges.modified.includes(file) ? 'modified' :
+                    unstagedChanges.untracked.includes(file) ? 'new' : 'deleted';
+      console.log(chalk.gray(`   ${index + 1}. ${file} (${status})`));
+    });
+
+    const addAll = await this.askConfirmation(
+      chalk.cyan('📦 Add all files? (Y/n): ')
+    );
+
+    if (addAll) {
+      DisplayService.displayProgress('Adding all files...');
+      await this.gitService.addFiles(allFiles);
+      DisplayService.displayProgress('All files added', true);
+    } else {
+      // For now, just add all files. In a more advanced version, we could implement
+      // interactive file selection
+      console.log(chalk.yellow('⚠️  Selective file adding not implemented yet, adding all files'));
+      DisplayService.displayProgress('Adding all files...');
+      await this.gitService.addFiles(allFiles);
+      DisplayService.displayProgress('All files added', true);
     }
   }
 

@@ -5,6 +5,7 @@ import { configManager } from './config.js';
 import { GitService } from './git.js';
 import { AIService } from './ai.js';
 import { HTMLReportGenerator } from './htmlReportGenerator.js';
+import { PlainTextReportGenerator } from './plainTextReportGenerator.js';
 import { DisplayService } from './display-service.js';
 import { CommitValidator } from './commit-validator.js';
 import { ReportOptions, GitCommit, AIProvider } from '../types/index.js';
@@ -148,7 +149,7 @@ export class ReportProcessor {
       const now = new Date();
       const timestamp = now.toISOString().replace(/[:.]/g, '-').split('.')[0];
       const lengthSuffix = reportLength !== 'detailed' ? `-${reportLength}` : '';
-      const fileExtension = options.format === 'json' ? 'json' : options.format === 'html' ? 'html' : 'md';
+      const fileExtension = options.format === 'json' ? 'json' : options.format === 'html' ? 'html' : options.format === 'txt' ? 'txt' : 'md';
       const defaultName = `report-${timestamp}${lengthSuffix}.${fileExtension}`;
       const outputPath = options.output || path.join(config.defaultOutput, defaultName);
       
@@ -169,6 +170,14 @@ export class ReportProcessor {
         });
       } else if (options.format === 'html') {
         reportContent = this.generateHtmlReport(report, commits, {
+          since: options.since,
+          until: options.until,
+          author: options.author,
+          branch,
+          reportLength
+        });
+      } else if (options.format === 'txt') {
+        reportContent = this.generatePlainTextReport(report, commits, {
           since: options.since,
           until: options.until,
           author: options.author,
@@ -284,6 +293,41 @@ export class ReportProcessor {
       : 'N/A';
 
     return htmlGenerator.generateReport(report, commits, {
+      since: metadata.since,
+      until: metadata.until,
+      author: metadata.author,
+      branch: metadata.branch,
+      generatedAt: new Date().toISOString(),
+      length: metadata.reportLength,
+      commitsAnalyzed: commits.length,
+      authors: authors.length,
+      filesModified,
+      dateRange
+    });
+  }
+
+  /**
+   * Generate Plain Text report
+   */
+  private generatePlainTextReport(
+    report: any,
+    commits: GitCommit[],
+    metadata: {
+      since?: string;
+      until?: string;
+      author?: string;
+      branch: string;
+      reportLength: string;
+    }
+  ): string {
+    const plainTextGenerator = new PlainTextReportGenerator();
+    const authors = [...new Set(commits.map(c => c.author))];
+    const filesModified = [...new Set(commits.flatMap(c => c.files))].length;
+    const dateRange = commits.length > 0 
+      ? `${commits[commits.length - 1].date.split('T')[0]} → ${commits[0].date.split('T')[0]}`
+      : 'N/A';
+
+    return plainTextGenerator.generateReport(report, commits, {
       since: metadata.since,
       until: metadata.until,
       author: metadata.author,

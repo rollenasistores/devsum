@@ -28,7 +28,7 @@ export interface ReportOptions {
   since?: string;
   until?: string;
   output?: string;
-  format?: 'markdown' | 'json' | 'html';
+  format?: 'markdown' | 'json' | 'html' | 'txt';
   length?: ReportLength;
 }
 
@@ -61,6 +61,10 @@ export interface CommitOptions {
   newBranch?: string;
   switchBranch?: string;
   listBranches?: boolean;
+  autoBranch?: boolean;
+  autoAdd?: boolean;
+  autoPush?: boolean;
+  report?: boolean;
 }
 
 export interface CommitMessageOptions {

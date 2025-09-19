@@ -506,4 +506,75 @@ export class GitService {
       throw new Error(`Failed to get branch info: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
+
+  /**
+   * Add all changes to staging area
+   */
+  async addAll(): Promise<void> {
+    try {
+      await this.git.add('.');
+    } catch (error) {
+      throw new Error(`Failed to add all changes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Add specific files to staging area
+   */
+  async addFiles(files: string[]): Promise<void> {
+    try {
+      await this.git.add(files);
+    } catch (error) {
+      throw new Error(`Failed to add files: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get unstaged changes
+   */
+  async getUnstagedChanges(): Promise<{
+    modified: string[];
+    untracked: string[];
+    deleted: string[];
+  }> {
+    try {
+      const status = await this.git.status();
+      return {
+        modified: status.modified || [],
+        untracked: status.not_added || [],
+        deleted: status.deleted || []
+      };
+    } catch (error) {
+      throw new Error(`Failed to get unstaged changes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Push current branch to remote
+   */
+  async pushBranch(branchName?: string, setUpstream: boolean = true): Promise<void> {
+    try {
+      const currentBranch = branchName || await this.getCurrentBranch();
+      
+      if (setUpstream) {
+        await this.git.push(['-u', 'origin', currentBranch]);
+      } else {
+        await this.git.push(['origin', currentBranch]);
+      }
+    } catch (error) {
+      throw new Error(`Failed to push branch: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Check if remote exists
+   */
+  async hasRemote(): Promise<boolean> {
+    try {
+      const remotes = await this.git.getRemotes();
+      return remotes.length > 0;
+    } catch {
+      return false;
+    }
+  }
 }

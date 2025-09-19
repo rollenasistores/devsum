@@ -29,11 +29,11 @@ export class SetupProcessor {
       const existingConfig = await configManager.loadConfig();
       let config: Config;
       let action: string | undefined;
-      
+
       if (existingConfig) {
         this.displayExistingConfig(existingConfig);
         action = await this.getUserAction();
-        
+
         if (action === 'cancel') {
           console.log();
           console.log(chalk.yellow('⏹️  Setup cancelled by user'));
@@ -71,11 +71,10 @@ export class SetupProcessor {
       // Show loading animation
       console.log();
       console.log(chalk.blue('💾 Saving configuration...'));
-      
-      await configManager.saveConfig(config);
-      
-      this.displaySuccess(config);
 
+      await configManager.saveConfig(config);
+
+      this.displaySuccess(config);
     } catch (error) {
       this.displayError(error);
       process.exit(1);
@@ -93,7 +92,7 @@ export class SetupProcessor {
     console.log(chalk.blue('═'.repeat(60)));
     console.log();
     console.log(chalk.green('🚀 Welcome to DevSum Interactive Setup!'));
-    console.log(chalk.gray('   Let\'s configure your development reporting tool...'));
+    console.log(chalk.gray("   Let's configure your development reporting tool..."));
     console.log();
   }
 
@@ -104,7 +103,7 @@ export class SetupProcessor {
     console.log(chalk.yellow('⚠️  Configuration Detected'));
     console.log(chalk.gray(`   Found existing config: ${configManager.getConfigPath()}`));
     console.log();
-    
+
     this.displayProviders(config.providers);
   }
 
@@ -116,7 +115,7 @@ export class SetupProcessor {
     console.log(chalk.blue('═'.repeat(60)));
     console.log(chalk.cyan.bold('📋 Configured AI Providers'));
     console.log();
-    
+
     if (providers.length === 0) {
       console.log(chalk.gray('   No providers configured yet.'));
     } else {
@@ -128,7 +127,7 @@ export class SetupProcessor {
         console.log();
       });
     }
-    
+
     console.log(chalk.blue('═'.repeat(60)));
   }
 
@@ -167,7 +166,7 @@ export class SetupProcessor {
         default: false,
       },
     ]);
-    
+
     return confirm;
   }
 
@@ -207,7 +206,7 @@ export class SetupProcessor {
         })),
       },
     ]);
-    
+
     const newProvider = await this.addProvider();
     newProvider.name = providerName; // Keep the same name
     await configManager.addProvider(newProvider);
@@ -231,7 +230,7 @@ export class SetupProcessor {
         })),
       },
     ]);
-    
+
     await configManager.removeProvider(providerName);
     const updatedConfig = await configManager.loadConfig();
     if (!updatedConfig) throw new Error('Failed to load updated config');
@@ -253,7 +252,7 @@ export class SetupProcessor {
         })),
       },
     ]);
-    
+
     await configManager.setDefaultProvider(providerName);
     const updatedConfig = await configManager.loadConfig();
     if (!updatedConfig) throw new Error('Failed to load updated config');
@@ -270,7 +269,7 @@ export class SetupProcessor {
         name: 'defaultOutput',
         message: '📁 Default output directory:',
         default: './reports',
-        validate: (input) => {
+        validate: input => {
           if (!input.trim()) {
             return '❌ Output directory is required';
           }
@@ -278,9 +277,9 @@ export class SetupProcessor {
         },
       },
     ]);
-    
+
     config.defaultOutput = defaultOutput;
-    
+
     // Add first provider
     const firstProvider = await this.addProvider();
     firstProvider.isDefault = true; // First provider is always default
@@ -297,7 +296,7 @@ export class SetupProcessor {
         type: 'input',
         name: 'name',
         message: '🏷️  Provider name (e.g., "work-gemini", "personal-claude"):',
-        validate: (input) => {
+        validate: input => {
           if (!input.trim()) {
             return '❌ Provider name is required';
           }
@@ -312,17 +311,17 @@ export class SetupProcessor {
         name: 'provider',
         message: '🤖 Choose AI provider type:',
         choices: [
-          { 
-            name: chalk.cyan('🤖 Gemini (Google)') + chalk.gray(' - Fast & Free tier available'), 
-            value: 'gemini' 
+          {
+            name: chalk.cyan('🤖 Gemini (Google)') + chalk.gray(' - Fast & Free tier available'),
+            value: 'gemini',
           },
-          { 
-            name: chalk.blue('🧠 Claude (Anthropic)') + chalk.gray(' - Advanced reasoning'), 
-            value: 'claude' 
+          {
+            name: chalk.blue('🧠 Claude (Anthropic)') + chalk.gray(' - Advanced reasoning'),
+            value: 'claude',
           },
-          { 
-            name: chalk.green('🚀 OpenAI (GPT-4)') + chalk.gray(' - Industry leading AI'), 
-            value: 'openai' 
+          {
+            name: chalk.green('🚀 OpenAI (GPT-4)') + chalk.gray(' - Industry leading AI'),
+            value: 'openai',
           },
         ],
       },
@@ -335,16 +334,19 @@ export class SetupProcessor {
         type: 'password',
         name: 'apiKey',
         message: '🔑 Enter your API key:',
-        validate: (input) => this.validateApiKey(input, answers.provider),
+        validate: input => this.validateApiKey(input, answers.provider),
       },
     ]);
 
     // Fetch available models from the API
     console.log();
     console.log(chalk.blue('🔍 Fetching available models...'));
-    
-    const availableModels = await AIService.fetchAvailableModels(answers.provider, configAnswers.apiKey);
-    
+
+    const availableModels = await AIService.fetchAvailableModels(
+      answers.provider,
+      configAnswers.apiKey
+    );
+
     if (availableModels.length === 0) {
       console.log(chalk.yellow('⚠️  Could not fetch models, using defaults'));
     } else {
@@ -356,15 +358,18 @@ export class SetupProcessor {
         type: 'list',
         name: 'model',
         message: '⚙️  Choose AI Model:',
-        choices: availableModels.length > 0 ? availableModels.map(model => ({
-          name: model,
-          value: model
-        })) : [
-          {
-            name: AIService.getDefaultModel(answers.provider) + ' (default)',
-            value: AIService.getDefaultModel(answers.provider)
-          }
-        ],
+        choices:
+          availableModels.length > 0
+            ? availableModels.map(model => ({
+                name: model,
+                value: model,
+              }))
+            : [
+                {
+                  name: AIService.getDefaultModel(answers.provider) + ' (default)',
+                  value: AIService.getDefaultModel(answers.provider),
+                },
+              ],
         default: AIService.getDefaultModel(answers.provider),
       },
       {
@@ -390,7 +395,7 @@ export class SetupProcessor {
   private displayProviderInfo(provider: string): void {
     console.log();
     console.log(chalk.blue('═'.repeat(60)));
-    
+
     if (provider === 'gemini') {
       console.log(chalk.cyan.bold('🤖 Google Gemini Configuration'));
       console.log(chalk.gray('   Fast, efficient AI for code analysis'));
@@ -479,20 +484,41 @@ export class SetupProcessor {
     console.log(chalk.gray(`   Output: ${config.defaultOutput}`));
     console.log(chalk.gray(`   Config: ${configManager.getConfigPath()}`));
     console.log();
-    
+
     console.log(chalk.yellow('🚀 Quick Start Commands:'));
     console.log(chalk.cyan('   devsum report --since 7d          '), chalk.gray('# Last 7 days'));
-    console.log(chalk.cyan('   devsum report --since 2025-09-01  '), chalk.gray('# Since specific date'));
-    console.log(chalk.cyan('   devsum report --author "John Doe" '), chalk.gray('# Specific author'));
+    console.log(
+      chalk.cyan('   devsum report --since 2025-09-01  '),
+      chalk.gray('# Since specific date')
+    );
+    console.log(
+      chalk.cyan('   devsum report --author "John Doe" '),
+      chalk.gray('# Specific author')
+    );
     console.log(chalk.cyan('   devsum report --format json       '), chalk.gray('# JSON output'));
-    console.log(chalk.cyan('   devsum report --format html       '), chalk.gray('# HTML presentation'));
-    console.log(chalk.cyan('   devsum report --length light      '), chalk.gray('# Brief executive summary'));
-    console.log(chalk.cyan('   devsum report --length short      '), chalk.gray('# Quick daily update'));
-    console.log(chalk.cyan('   devsum report --length detailed   '), chalk.gray('# Comprehensive analysis'));
-    console.log(chalk.cyan('   devsum report --provider <name>   '), chalk.gray('# Use specific AI provider'));
+    console.log(
+      chalk.cyan('   devsum report --format html       '),
+      chalk.gray('# HTML presentation')
+    );
+    console.log(
+      chalk.cyan('   devsum report --length light      '),
+      chalk.gray('# Brief executive summary')
+    );
+    console.log(
+      chalk.cyan('   devsum report --length short      '),
+      chalk.gray('# Quick daily update')
+    );
+    console.log(
+      chalk.cyan('   devsum report --length detailed   '),
+      chalk.gray('# Comprehensive analysis')
+    );
+    console.log(
+      chalk.cyan('   devsum report --provider <name>   '),
+      chalk.gray('# Use specific AI provider')
+    );
     console.log();
-    
-    console.log(chalk.green('🎉 You\'re all set! Happy coding!'));
+
+    console.log(chalk.green("🎉 You're all set! Happy coding!"));
     console.log(chalk.blue('═'.repeat(60)));
   }
 
@@ -506,7 +532,7 @@ export class SetupProcessor {
     console.log();
     console.log(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
     console.log();
-    
+
     console.log(chalk.yellow('💡 Troubleshooting:'));
     console.log(chalk.gray('   • Check your internet connection'));
     console.log(chalk.gray('   • Verify API key permissions'));

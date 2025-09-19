@@ -16,23 +16,25 @@ export class CommitCommand {
   /**
    * Execute the commit command
    */
-  public async execute(options: CommitOptions & { 
-    auto?: boolean;
-    conventional?: boolean;
-    emoji?: boolean;
-    length?: string;
-    provider?: string;
-    dryRun?: boolean;
-    noHeader?: boolean;
-    branch?: string;
-    newBranch?: string;
-    switchBranch?: string;
-    listBranches?: boolean;
-    autoBranch?: boolean;
-    autoAdd?: boolean;
-    autoPush?: boolean;
-    report?: boolean;
-  }): Promise<void> {
+  public async execute(
+    options: CommitOptions & {
+      auto?: boolean;
+      conventional?: boolean;
+      emoji?: boolean;
+      length?: string;
+      provider?: string;
+      dryRun?: boolean;
+      noHeader?: boolean;
+      branch?: string;
+      newBranch?: string;
+      switchBranch?: string;
+      listBranches?: boolean;
+      autoBranch?: boolean;
+      autoAdd?: boolean;
+      autoPush?: boolean;
+      report?: boolean;
+    }
+  ): Promise<void> {
     await this.processor.processCommit(options);
   }
 }
@@ -42,10 +44,17 @@ const commitCommandInstance = new CommitCommand();
 
 export const commitCommand = new Command('commit')
   .description('Generate AI-powered commit messages from your changes')
-  .option('-a, --auto', 'Full automation: generate branch, add files, commit with detailed messages, and optionally push')
+  .option(
+    '-a, --auto',
+    'Full automation: generate branch, add files, commit with detailed messages, and optionally push'
+  )
   .option('-c, --conventional', 'Generate conventional commit format')
   .option('-e, --emoji', 'Include emojis in commit message')
-  .option('-l, --length <length>', 'Message length (short|medium|detailed). Auto mode uses detailed by default.', 'medium')
+  .option(
+    '-l, --length <length>',
+    'Message length (short|medium|detailed). Auto mode uses detailed by default.',
+    'medium'
+  )
   .option('-p, --provider <name>', 'Use specific AI provider by name')
   .option('--dry-run', 'Show what would be committed without actually committing')
   .option('--no-header', 'Skip the fancy header display')
@@ -56,23 +65,27 @@ export const commitCommand = new Command('commit')
   .option('--auto-branch', 'Auto-generate branch name and ask for confirmation')
   .option('--auto-add', 'Automatically add all changes (git add .)')
   .option('--auto-push', 'Automatically push after committing')
-  .option('--report', 'Generate a report for today\'s commits after committing')
-  .action(async (options: CommitOptions & { 
-    auto?: boolean;
-    conventional?: boolean;
-    emoji?: boolean;
-    length?: string;
-    provider?: string;
-    dryRun?: boolean;
-    noHeader?: boolean;
-    branch?: string;
-    newBranch?: string;
-    switchBranch?: string;
-    listBranches?: boolean;
-    autoBranch?: boolean;
-    autoAdd?: boolean;
-    autoPush?: boolean;
-    report?: boolean;
-  }) => {
-    await commitCommandInstance.execute(options);
-  });
+  .option('--report', "Generate a report for today's commits after committing")
+  .action(
+    async (
+      options: CommitOptions & {
+        auto?: boolean;
+        conventional?: boolean;
+        emoji?: boolean;
+        length?: string;
+        provider?: string;
+        dryRun?: boolean;
+        noHeader?: boolean;
+        branch?: string;
+        newBranch?: string;
+        switchBranch?: string;
+        listBranches?: boolean;
+        autoBranch?: boolean;
+        autoAdd?: boolean;
+        autoPush?: boolean;
+        report?: boolean;
+      }
+    ) => {
+      await commitCommandInstance.execute(options);
+    }
+  );

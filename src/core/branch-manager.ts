@@ -21,10 +21,12 @@ export class BranchManager {
       if (branchExists) {
         throw new Error(`Branch '${branchName}' already exists`);
       }
-      
+
       await this.gitService.createAndSwitchBranch(branchName);
     } catch (error) {
-      throw new Error(`Failed to create branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to create branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -37,10 +39,12 @@ export class BranchManager {
       if (!branchExists) {
         throw new Error(`Branch '${branchName}' does not exist`);
       }
-      
+
       await this.gitService.switchBranch(branchName);
     } catch (error) {
-      throw new Error(`Failed to switch to branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to switch to branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -56,7 +60,9 @@ export class BranchManager {
         await this.gitService.createAndSwitchBranch(branchName);
       }
     } catch (error) {
-      throw new Error(`Failed to create or switch to branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to create or switch to branch '${branchName}': ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -67,7 +73,9 @@ export class BranchManager {
     try {
       return await this.gitService.getBranches();
     } catch (error) {
-      throw new Error(`Failed to get branches: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get branches: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -84,7 +92,9 @@ export class BranchManager {
     try {
       return await this.gitService.getBranchInfo();
     } catch (error) {
-      throw new Error(`Failed to get branch info: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get branch info: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -111,7 +121,7 @@ export class BranchManager {
   }): Promise<{ finalBranchName?: string; switched: boolean }> {
     const branchName = options.branch || options.newBranch;
     const switchBranch = options.switchBranch;
-    
+
     if (branchName) {
       // Create and switch to new branch
       await this.createAndSwitchBranch(branchName);
@@ -126,7 +136,7 @@ export class BranchManager {
       await this.createOrSwitchBranch(generatedBranchName);
       return { finalBranchName: generatedBranchName, switched: true };
     }
-    
+
     return { switched: false };
   }
 
@@ -140,11 +150,11 @@ export class BranchManager {
     console.log();
     console.log(chalk.red('Error:'), error);
     console.log();
-    
+
     console.log(chalk.yellow('🔧 Troubleshooting:'));
     console.log(chalk.gray('   • Check if branch name is valid'));
     console.log(chalk.gray('   • Ensure you have git permissions'));
-    console.log(chalk.gray('   • Verify you\'re in a git repository'));
+    console.log(chalk.gray("   • Verify you're in a git repository"));
     console.log(chalk.gray('   • Use --list-branches to see available branches'));
     console.log();
     console.log(chalk.blue('For help: https://github.com/rollenasistores/devsum/issues'));
@@ -157,7 +167,9 @@ export class BranchManager {
   public displayBranchExistsWarning(branchName: string): void {
     console.log();
     console.log(chalk.yellow(`⚠️  Branch '${branchName}' already exists`));
-    console.log(chalk.blue('💡 Use --switch to switch to existing branch or choose a different name'));
+    console.log(
+      chalk.blue('💡 Use --switch to switch to existing branch or choose a different name')
+    );
   }
 
   /**

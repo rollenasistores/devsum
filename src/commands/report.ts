@@ -16,18 +16,20 @@ export class ReportCommand {
   /**
    * Execute the report command
    */
-  public async execute(options: ReportOptions & { 
-    noHeader?: boolean; 
-    author?: string;
-    today?: boolean;
-    length?: string;
-    light?: boolean;
-    short?: boolean;
-    detailed?: boolean;
-    provider?: string;
-    listProviders?: boolean;
-    listModels?: boolean;
-  }): Promise<void> {
+  public async execute(
+    options: ReportOptions & {
+      noHeader?: boolean;
+      author?: string;
+      today?: boolean;
+      length?: string;
+      light?: boolean;
+      short?: boolean;
+      detailed?: boolean;
+      provider?: string;
+      listProviders?: boolean;
+      listModels?: boolean;
+    }
+  ): Promise<void> {
     await this.processor.processReport(options);
   }
 }
@@ -37,7 +39,10 @@ const reportCommandInstance = new ReportCommand();
 
 export const reportCommand = new Command('report')
   .description('Generate accomplishment report from git commits')
-  .option('-s, --since <date>', 'Include commits since this date (YYYY-MM-DD, "today", or relative like "7d")')
+  .option(
+    '-s, --since <date>',
+    'Include commits since this date (YYYY-MM-DD, "today", or relative like "7d")'
+  )
   .option('-u, --until <date>', 'Include commits until this date (YYYY-MM-DD or "today")')
   .option('-a, --author <name>', 'Filter commits by author name')
   .option('-o, --output <path>', 'Output file path')
@@ -51,17 +56,21 @@ export const reportCommand = new Command('report')
   .option('-p, --provider <name>', 'Use specific AI provider by name')
   .option('--list-providers', 'List available AI providers and exit')
   .option('--list-models', 'List available models for configured providers and exit')
-  .action(async (options: ReportOptions & { 
-    noHeader?: boolean; 
-    author?: string;
-    today?: boolean;
-    length?: string;
-    light?: boolean;
-    short?: boolean;
-    detailed?: boolean;
-    provider?: string;
-    listProviders?: boolean;
-    listModels?: boolean;
-  }) => {
-    await reportCommandInstance.execute(options);
-  });
+  .action(
+    async (
+      options: ReportOptions & {
+        noHeader?: boolean;
+        author?: string;
+        today?: boolean;
+        length?: string;
+        light?: boolean;
+        short?: boolean;
+        detailed?: boolean;
+        provider?: string;
+        listProviders?: boolean;
+        listModels?: boolean;
+      }
+    ) => {
+      await reportCommandInstance.execute(options);
+    }
+  );

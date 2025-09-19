@@ -6,8 +6,15 @@ import { Config, AIProvider } from '../types/index.js';
 const CONFIG_DIR = path.join(os.homedir(), '.config', 'devsum');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 
+/**
+ * Configuration manager for DevSum settings
+ * Handles configuration persistence and provider management
+ */
 export class ConfigManager {
-  async ensureConfigDir(): Promise<void> {
+  /**
+   * Ensure configuration directory exists
+   */
+  public async ensureConfigDir(): Promise<void> {
     try {
       await fs.access(CONFIG_DIR);
     } catch {
@@ -15,40 +22,39 @@ export class ConfigManager {
     }
   }
 
-  async saveConfig(config: Config): Promise<void> {
+  /**
+   * Save configuration to file
+   */
+  public async saveConfig(config: Config): Promise<void> {
     await this.ensureConfigDir();
     await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2));
   }
 
-  async loadConfig(): Promise<Config | null> {
+  /**
+   * Load configuration from file
+   */
+  public async loadConfig(): Promise<Config | null> {
     try {
       const data = await fs.readFile(CONFIG_FILE, 'utf-8');
       const config = JSON.parse(data);
-      
+
       // Handle migration from old config format
-      if (config.provider && !config.providers) {
-        const migratedConfig: Config = {
-          providers: [{
-            name: 'default',
-            provider: config.provider,
-            apiKey: config.apiKey,
-            model: config.model,
-            isDefault: true
-          }],
-          defaultOutput: config.defaultOutput,
-          defaultProvider: 'default'
-        };
+      if (this.isLegacyConfig(config)) {
+        const migratedConfig = this.migrateLegacyConfig(config);
         await this.saveConfig(migratedConfig);
         return migratedConfig;
       }
-      
+
       return config;
     } catch {
       return null;
     }
   }
 
-  async configExists(): Promise<boolean> {
+  /**
+   * Check if configuration file exists
+   */
+  public async configExists(): Promise<boolean> {
     try {
       await fs.access(CONFIG_FILE);
       return true;
@@ -57,56 +63,109 @@ export class ConfigManager {
     }
   }
 
-  getConfigPath(): string {
+  /**
+   * Get configuration file path
+   */
+  public getConfigPath(): string {
     return CONFIG_FILE;
   }
 
-  async addProvider(provider: AIProvider): Promise<void> {
+  /**
+   * Check if config is in legacy format
+   */
+  private isLegacyConfig(config: any): boolean {
+    return config.provider && !config.providers;
+  }
+
+  /**
+   * Migrate legacy config to new format
+   */
+  private migrateLegacyConfig(legacyConfig: any): Config {
+    return {
+      providers: [
+        {
+          name: 'default',
+          provider: legacyConfig.provider,
+          apiKey: legacyConfig.apiKey,
+          model: legacyConfig.model,
+          isDefault: true,
+        },
+      ],
+      defaultOutput: legacyConfig.defaultOutput,
+      defaultProvider: 'default',
+    };
+  }
+
+  /**
+   * Add or update a provider
+   */
+  public async addProvider(provider: AIProvider): Promise<void> {
     const config = await this.loadConfig();
     if (!config) {
       throw new Error('No configuration found. Please run setup first.');
     }
 
-    // Check if provider with same name already exists
-    const existingIndex = config.providers.findIndex(p => p.name === provider.name);
-    if (existingIndex >= 0) {
-      config.providers[existingIndex] = provider;
-    } else {
-      config.providers.push(provider);
-    }
+    const updatedProviders = this.updateProviderInList(config.providers, provider);
+    const updatedConfig = this.updateDefaultProvider(
+      {
+        ...config,
+        providers: updatedProviders,
+      },
+      provider
+    );
 
-    // If this is the first provider or marked as default, set it as default
-    if (config.providers.length === 1 || provider.isDefault) {
-      config.defaultProvider = provider.name;
-      config.providers.forEach(p => p.isDefault = p.name === provider.name);
-    }
-
-    await this.saveConfig(config);
+    await this.saveConfig(updatedConfig);
   }
 
-  async removeProvider(providerName: string): Promise<void> {
+  /**
+   * Update provider in the providers list
+   */
+  private updateProviderInList(providers: AIProvider[], newProvider: AIProvider): AIProvider[] {
+    const existingIndex = providers.findIndex(p => p.name === newProvider.name);
+
+    if (existingIndex >= 0) {
+      const updated = [...providers];
+      updated[existingIndex] = newProvider;
+      return updated;
+    } else {
+      return [...providers, newProvider];
+    }
+  }
+
+  /**
+   * Update default provider if needed
+   */
+  private updateDefaultProvider(config: Config, provider: AIProvider): Config {
+    if (config.providers.length === 1 || provider.isDefault) {
+      return {
+        ...config,
+        defaultProvider: provider.name,
+        providers: config.providers.map(p => ({
+          ...p,
+          isDefault: p.name === provider.name,
+        })),
+      };
+    }
+    return config;
+  }
+
+  /**
+   * Remove a provider
+   */
+  public async removeProvider(providerName: string): Promise<void> {
     const config = await this.loadConfig();
     if (!config) {
       throw new Error('No configuration found.');
     }
 
-    config.providers = config.providers.filter(p => p.name !== providerName);
-    
-    // If we removed the default provider, set a new default
-    if (config.defaultProvider === providerName) {
-      if (config.providers.length > 0) {
-        config.defaultProvider = config.providers[0].name;
-        config.providers[0].isDefault = true;
-        config.providers.forEach((p, index) => p.isDefault = index === 0);
-      } else {
-        config.defaultProvider = undefined;
-      }
-    }
-
-    await this.saveConfig(config);
+    const updatedConfig = this.removeProviderFromConfig(config, providerName);
+    await this.saveConfig(updatedConfig);
   }
 
-  async setDefaultProvider(providerName: string): Promise<void> {
+  /**
+   * Set default provider
+   */
+  public async setDefaultProvider(providerName: string): Promise<void> {
     const config = await this.loadConfig();
     if (!config) {
       throw new Error('No configuration found.');
@@ -117,12 +176,14 @@ export class ConfigManager {
       throw new Error(`Provider '${providerName}' not found.`);
     }
 
-    config.defaultProvider = providerName;
-    config.providers.forEach(p => p.isDefault = p.name === providerName);
-    await this.saveConfig(config);
+    const updatedConfig = this.setDefaultProviderInConfig(config, providerName);
+    await this.saveConfig(updatedConfig);
   }
 
-  async getProvider(providerName?: string): Promise<AIProvider | null> {
+  /**
+   * Get a specific provider or default provider
+   */
+  public async getProvider(providerName?: string): Promise<AIProvider | null> {
     const config = await this.loadConfig();
     if (!config || config.providers.length === 0) {
       return null;
@@ -136,9 +197,57 @@ export class ConfigManager {
     return config.providers.find(p => p.isDefault) || config.providers[0] || null;
   }
 
-  async listProviders(): Promise<AIProvider[]> {
+  /**
+   * List all providers
+   */
+  public async listProviders(): Promise<readonly AIProvider[]> {
     const config = await this.loadConfig();
     return config?.providers || [];
+  }
+
+  /**
+   * Remove provider from config
+   */
+  private removeProviderFromConfig(config: Config, providerName: string): Config {
+    const filteredProviders = config.providers.filter(p => p.name !== providerName);
+
+    if (config.defaultProvider === providerName) {
+      if (filteredProviders.length > 0) {
+        return {
+          ...config,
+          providers: filteredProviders.map((p, index) => ({
+            ...p,
+            isDefault: index === 0,
+          })),
+          defaultProvider: filteredProviders[0]?.name,
+        };
+      } else {
+        return {
+          ...config,
+          providers: filteredProviders,
+          defaultProvider: undefined,
+        };
+      }
+    }
+
+    return {
+      ...config,
+      providers: filteredProviders,
+    };
+  }
+
+  /**
+   * Set default provider in config
+   */
+  private setDefaultProviderInConfig(config: Config, providerName: string): Config {
+    return {
+      ...config,
+      defaultProvider: providerName,
+      providers: config.providers.map(p => ({
+        ...p,
+        isDefault: p.name === providerName,
+      })),
+    };
   }
 }
 

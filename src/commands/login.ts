@@ -42,14 +42,16 @@ export class LoginCommand {
    */
   private displayWelcome(): void {
     console.clear();
-    console.log(chalk.cyan.bold(`
+    console.log(
+      chalk.cyan.bold(`
 ██████╗ ███████╗██╗   ██╗███████╗██╗   ██╗███╗   ███╗
 ██╔══██╗██╔════╝██║   ██║██╔════╝██║   ██║████╗ ████║
 ██║  ██║█████╗  ██║   ██║███████╗██║   ██║██╔████╔██║
 ██║  ██║██╔══╝  ╚██╗ ██╔╝╚════██║██║   ██║██║╚██╔╝██║
 ██████╔╝███████╗ ╚████╔╝ ███████║╚██████╔╝██║ ╚═╝ ██║
 ╚═════╝ ╚══════╝  ╚═══╝  ╚══════╝ ╚═════╝ ╚═╝     ╚═╝
-`));
+`)
+    );
     console.log(chalk.gray('                    Git Commit Report Generator'));
     console.log(chalk.gray(`                      Powered by AI • v${getVersion()}`));
     console.log(chalk.blue('═'.repeat(60)));
@@ -63,15 +65,15 @@ export class LoginCommand {
     console.log(chalk.green.bold('🎉 Welcome to DevSum Free Mode!'));
     console.log(chalk.gray('   No authentication required - start building reports now!'));
     console.log();
-    
+
     console.log(chalk.blue('═'.repeat(60)));
-    console.log(chalk.yellow.bold('📦 What\'s Included (FREE):'));
+    console.log(chalk.yellow.bold("📦 What's Included (FREE):"));
     console.log();
-    
+
     LoginCommand.FREE_FEATURES.forEach(feature => {
       console.log(chalk.gray('   '), feature);
     });
-    
+
     console.log();
     console.log(chalk.blue('═'.repeat(60)));
   }
@@ -82,17 +84,17 @@ export class LoginCommand {
   private displayQuickStart(): void {
     console.log(chalk.cyan.bold('🚀 Quick Start Guide:'));
     console.log();
-    
+
     console.log(chalk.yellow('1️⃣  Setup your AI provider:'));
     console.log(chalk.white('   devsum setup'));
     console.log(chalk.gray('   Configure Gemini or Claude API credentials'));
     console.log();
-    
+
     console.log(chalk.yellow('2️⃣  Generate your first report:'));
     console.log(chalk.white('   devsum report --since 7d'));
     console.log(chalk.gray('   Create a report for the last 7 days'));
     console.log();
-    
+
     console.log(chalk.yellow('3️⃣  Explore more options:'));
     console.log(chalk.white('   devsum report --help'));
     console.log(chalk.gray('   See all available commands and filters'));
@@ -106,12 +108,21 @@ export class LoginCommand {
     console.log(chalk.blue('═'.repeat(60)));
     console.log(chalk.cyan.bold('💡 Example Commands:'));
     console.log();
-    
-    console.log(chalk.white('  devsum report --since 2025-09-01'), chalk.gray('  # Reports since date'));
+
+    console.log(
+      chalk.white('  devsum report --since 2025-09-01'),
+      chalk.gray('  # Reports since date')
+    );
     console.log(chalk.white('  devsum report --since 7d'), chalk.gray('          # Last 7 days'));
-    console.log(chalk.white('  devsum report --author "John"'), chalk.gray('      # Filter by author'));
+    console.log(
+      chalk.white('  devsum report --author "John"'),
+      chalk.gray('      # Filter by author')
+    );
     console.log(chalk.white('  devsum report --format json'), chalk.gray('       # JSON output'));
-    console.log(chalk.white('  devsum report --output ./team'), chalk.gray('     # Custom output dir'));
+    console.log(
+      chalk.white('  devsum report --output ./team'),
+      chalk.gray('     # Custom output dir')
+    );
     console.log();
   }
 
@@ -122,13 +133,16 @@ export class LoginCommand {
     console.log(chalk.blue('═'.repeat(60)));
     console.log(chalk.magenta.bold('🔮 Coming Soon (Pro Features):'));
     console.log();
-    
+
     LoginCommand.COMING_SOON.forEach(feature => {
       console.log(chalk.gray('   '), feature);
     });
-    
+
     console.log();
-    console.log(chalk.gray('   Stay tuned for updates! '), chalk.cyan('https://github.com/rollenasistores/devsum'));
+    console.log(
+      chalk.gray('   Stay tuned for updates! '),
+      chalk.cyan('https://github.com/rollenasistores/devsum')
+    );
     console.log();
   }
 

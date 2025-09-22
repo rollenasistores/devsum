@@ -287,4 +287,43 @@ export class CommitValidator {
       if (filters.author) console.log(chalk.gray(`  --author: ${filters.author}`));
     }
   }
+
+  /**
+   * Validate analytics focus parameter
+   */
+  public validateAnalyticsFocus(focus?: string): string | null {
+    const validFocuses = ['productivity', 'quality', 'collaboration', 'patterns', 'all'];
+    if (focus && !validFocuses.includes(focus)) {
+      return `Invalid analytics focus: "${focus}". Valid options: ${validFocuses.join(', ')}`;
+    }
+    return null;
+  }
+
+  /**
+   * Display help for analytics focus options
+   */
+  public displayAnalyticsFocusHelp(): void {
+    console.log();
+    console.log(chalk.blue('💡 Analytics focus options:'));
+    console.log(
+      chalk.white('   --focus productivity  '),
+      chalk.gray('# Focus on productivity metrics and patterns')
+    );
+    console.log(
+      chalk.white('   --focus quality       '),
+      chalk.gray('# Focus on code quality and technical debt')
+    );
+    console.log(
+      chalk.white('   --focus collaboration '),
+      chalk.gray('# Focus on team collaboration and author activity')
+    );
+    console.log(
+      chalk.white('   --focus patterns      '),
+      chalk.gray('# Focus on coding patterns and trends')
+    );
+    console.log(
+      chalk.white('   --focus all           '),
+      chalk.gray('# Comprehensive analysis (default)')
+    );
+  }
 }

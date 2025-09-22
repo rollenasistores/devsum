@@ -33,9 +33,18 @@ export class CommitCommand {
       autoAdd?: boolean;
       autoPush?: boolean;
       report?: boolean;
+      noAuto?: boolean;
     }
   ): Promise<void> {
-    await this.processor.processCommit(options);
+    // Enable auto mode by default unless --no-auto is specified
+    const autoOptions = {
+      ...options,
+      auto: options.noAuto ? false : options.auto !== false, // Default to true unless --no-auto or explicitly false
+      length: options.length || 'detailed', // Default to detailed for better commit messages
+      conventional: options.conventional !== false, // Default to conventional format
+    };
+
+    await this.processor.processCommit(autoOptions);
   }
 }
 
@@ -43,11 +52,14 @@ export class CommitCommand {
 const commitCommandInstance = new CommitCommand();
 
 export const commitCommand = new Command('commit')
-  .description('Generate AI-powered commit messages from your changes')
+  .description(
+    'Generate AI-powered commit messages from your changes (auto mode enabled by default)'
+  )
   .option(
     '-a, --auto',
-    'Full automation: generate branch, add files, commit with detailed messages, and optionally push'
+    'Full automation: generate branch, add files, commit with detailed messages, and optionally push (enabled by default)'
   )
+  .option('--no-auto', 'Disable auto mode and use interactive mode instead')
   .option('-c, --conventional', 'Generate conventional commit format')
   .option('-e, --emoji', 'Include emojis in commit message')
   .option(
@@ -84,6 +96,7 @@ export const commitCommand = new Command('commit')
         autoAdd?: boolean;
         autoPush?: boolean;
         report?: boolean;
+        noAuto?: boolean;
       }
     ) => {
       await commitCommandInstance.execute(options);

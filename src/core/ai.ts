@@ -104,6 +104,19 @@ export class AIService {
   }
 
   /**
+   * Generate pull request title from staged changes
+   */
+  public async generatePullRequestTitle(changes: StagedChanges): Promise<string> {
+    const prompt = this.buildPullRequestTitlePrompt(changes);
+
+    try {
+      return await this.executePullRequestTitleGeneration(prompt);
+    } catch (error) {
+      throw this.handleGenerationError(error);
+    }
+  }
+
+  /**
    * Execute report generation based on provider
    */
   private async executeGeneration(prompt: string): Promise<AIResponse> {
@@ -146,6 +159,22 @@ export class AIService {
         return await this.generateBranchNameWithClaude(prompt);
       case 'openai':
         return await this.generateBranchNameWithOpenAI(prompt);
+      default:
+        throw new Error(`Unsupported provider: ${this.provider}`);
+    }
+  }
+
+  /**
+   * Execute pull request title generation based on provider
+   */
+  private async executePullRequestTitleGeneration(prompt: string): Promise<string> {
+    switch (this.provider) {
+      case 'gemini':
+        return await this.generatePullRequestTitleWithGemini(prompt);
+      case 'claude':
+        return await this.generatePullRequestTitleWithClaude(prompt);
+      case 'openai':
+        return await this.generatePullRequestTitleWithOpenAI(prompt);
       default:
         throw new Error(`Unsupported provider: ${this.provider}`);
     }
@@ -858,6 +887,52 @@ Requirements:
 Generate only the branch name, no additional text:`;
   }
 
+  private buildPullRequestTitlePrompt(changes: StagedChanges): string {
+    // Build file summary
+    const fileSummary = changes.stagedFiles
+      .map(file => {
+        const isAdded = changes.addedFiles.includes(file);
+        const isDeleted = changes.deletedFiles.includes(file);
+        const isModified = changes.modifiedFiles.includes(file);
+
+        let status = 'modified';
+        if (isAdded) status = 'added';
+        else if (isDeleted) status = 'deleted';
+
+        return `- ${file} (${status})`;
+      })
+      .join('\n');
+
+    // Build change summary
+    const changeSummary = `Files changed: ${changes.stagedFiles.length}
+Insertions: +${changes.diffStats.insertions}
+Deletions: -${changes.diffStats.deletions}
+
+Files:
+${fileSummary}`;
+
+    return `Generate a pull request title for the following changes:
+
+${changeSummary}
+
+Requirements:
+- Generate a SINGLE SENTENCE title (under 60 characters)
+- Use present tense ("Add feature" not "Added feature")
+- Be concise but descriptive
+- Focus on the main purpose or impact of the changes
+- Start with a verb (Add, Fix, Update, Remove, Refactor, etc.)
+- Avoid technical jargon when possible
+
+Examples of good PR titles:
+- Add user authentication system
+- Fix login validation bug
+- Update README with installation guide
+- Remove deprecated API endpoints
+- Refactor database connection handling
+
+Generate only the pull request title, no additional text:`;
+  }
+
   private parseBranchNameResponse(response: string): string {
     // Clean up the response and extract the branch name
     let branchName = response.trim();
@@ -891,5 +966,99 @@ Generate only the branch name, no additional text:`;
     }
 
     return branchName;
+  }
+
+  private async generatePullRequestTitleWithGemini(prompt: string): Promise<string> {
+    if (!this.geminiClient) {
+      throw new Error('Gemini client not initialized');
+    }
+
+    const model = this.geminiClient.getGenerativeModel({
+      model: this.model || 'gemini-2.0-flash',
+    });
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    return this.parsePullRequestTitleResponse(text);
+  }
+
+  private async generatePullRequestTitleWithClaude(prompt: string): Promise<string> {
+    if (!this.claudeClient) {
+      throw new Error('Claude client not initialized');
+    }
+
+    const response = await this.claudeClient.messages.create({
+      model: this.model || 'claude-3-5-sonnet-20241022',
+      max_tokens: 50,
+      temperature: 0.7,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    });
+
+    // Extract text from Claude's response
+    const text = response.content
+      .filter(block => block.type === 'text')
+      .map(block => (block as any).text)
+      .join('\n');
+
+    return this.parsePullRequestTitleResponse(text);
+  }
+
+  private async generatePullRequestTitleWithOpenAI(prompt: string): Promise<string> {
+    if (!this.openaiClient) {
+      throw new Error('OpenAI client not initialized');
+    }
+
+    const response = await this.openaiClient.chat.completions.create({
+      model: this.model || 'gpt-4',
+      max_tokens: 50,
+      temperature: 0.7,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    });
+
+    const text = response.choices[0]?.message?.content || '';
+    return this.parsePullRequestTitleResponse(text);
+  }
+
+  private parsePullRequestTitleResponse(response: string): string {
+    // Clean up the response and extract the pull request title
+    let title = response.trim();
+
+    // Remove common prefixes
+    title = title.replace(/^(pull request title:|pr title:|title:)/i, '').trim();
+
+    // Remove quotes
+    if (title.startsWith('"') && title.endsWith('"')) {
+      title = title.slice(1, -1);
+    }
+    if (title.startsWith("'") && title.endsWith("'")) {
+      title = title.slice(1, -1);
+    }
+
+    // Ensure it's a single sentence
+    title = title.split('\n')[0]?.trim() || title;
+
+    // Ensure we have a valid title
+    if (!title || title.length < 3) {
+      title = 'Update files';
+    }
+
+    // Ensure it's under 60 characters
+    if (title.length > 60) {
+      title = title.substring(0, 57) + '...';
+    }
+
+    return title;
   }
 }

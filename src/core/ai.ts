@@ -680,15 +680,15 @@ Use appropriate emojis:
     let lengthInstructions = '';
     switch (length) {
       case 'short':
-        lengthInstructions = 'Generate a SHORT commit message (1 line, under 50 characters)';
+        lengthInstructions = 'Generate a SHORT commit message as a bulleted list (2-3 bullet points, each under 50 characters)';
         break;
       case 'medium':
         lengthInstructions =
-          'Generate a MEDIUM commit message (1-2 lines, under 72 characters per line)';
+          'Generate a MEDIUM commit message as a bulleted list (3-5 bullet points, each under 60 characters)';
         break;
       case 'detailed':
         lengthInstructions =
-          'Generate a DETAILED commit message (2-3 lines, with context and impact)';
+          'Generate a DETAILED commit message as a bulleted list (4-7 bullet points, each under 70 characters)';
         break;
     }
 
@@ -700,14 +700,21 @@ Requirements:
 ${lengthInstructions}
 ${formatInstructions}
 
-Focus on:
-- What was changed (not how)
-- Why it was changed (if obvious)
-- Impact or benefit
-- Use present tense ("add feature" not "added feature")
-- Be concise but descriptive
+Format the commit message as a bulleted list where each bullet point describes a specific change:
+- Use present tense ("Fix bug" not "Fixed bug")
+- Start each bullet with a verb (Fix, Add, Update, Remove, Refactor, etc.)
+- Be specific about what was changed
+- Each bullet should be concise but descriptive
+- Focus on the main changes made
 
-Generate only the commit message, no additional text:`;
+Examples of good bulleted commit messages:
+- Fix authentication validation bug
+- Add user profile editing functionality  
+- Update README with installation instructions
+- Remove deprecated API endpoints
+- Refactor database connection handling
+
+Generate only the commit message as a bulleted list, no additional text:`;
   }
 
   private parseCommitResponse(response: string): string {
@@ -722,8 +729,16 @@ Generate only the commit message, no additional text:`;
       line.replace(/^(commit message:|message:|commit:)/i, '').trim()
     );
 
-    // Join lines and clean up
-    let message = cleanedLines.join(' ').trim();
+    // Filter for bulleted lines (starting with - or *)
+    const bulletLines = cleanedLines.filter(line => 
+      line.startsWith('-') || line.startsWith('*') || line.startsWith('•')
+    );
+
+    // If we have bulleted lines, use them; otherwise fall back to all lines
+    const messageLines = bulletLines.length > 0 ? bulletLines : cleanedLines;
+
+    // Join lines with newlines to preserve bulleted format
+    let message = messageLines.join('\n').trim();
 
     // Remove quotes if the entire message is wrapped in them
     if (message.startsWith('"') && message.endsWith('"')) {
@@ -735,7 +750,7 @@ Generate only the commit message, no additional text:`;
 
     // Ensure we have a message
     if (!message) {
-      message = 'Update files';
+      message = '- Update files';
     }
 
     return message;

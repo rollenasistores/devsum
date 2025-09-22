@@ -28,8 +28,8 @@ export class AnalyticsDataService {
   public async generateAnalyticsData(
     commits: GitCommit[],
     focus: AnalyticsFocus,
-    since: string,
-    until: string,
+    since: string | undefined,
+    until: string | undefined,
     provider: string
   ): Promise<AnalyticsData> {
     const commitAnalytics = this.analyzeCommits(commits);
@@ -38,14 +38,21 @@ export class AnalyticsDataService {
     const collaborationAnalytics = this.analyzeCollaboration(commits);
     const qualityAnalytics = this.analyzeCodeQuality(commits);
 
-    const days = this.calculateDaysDifference(since, until);
     const repositoryName = await this.getRepositoryName();
+
+    // Check if we're analyzing the entire repository history
+    const isAllTime = !since;
+
+    let days = 0;
+    if (!isAllTime && since && until) {
+      days = this.calculateDaysDifference(since, until);
+    }
 
     return {
       period: {
-        since,
-        until,
-        days,
+        since: isAllTime ? 'All time' : (since || ''),
+        until: isAllTime ? 'Present' : (until || ''),
+        days: isAllTime ? 0 : days, // Use 0 to indicate all time
       },
       repository: {
         name: repositoryName,

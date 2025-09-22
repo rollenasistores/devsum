@@ -106,7 +106,7 @@ export class AnalyticsProcessor {
       // Get git commits
       DisplayService.displayProgress('Analyzing git commits...');
       const commits = await this.gitService.getCommits(
-        options.since || '30d',
+        options.since, // No default - will get entire repo history if undefined
         options.until,
         options.author
       );
@@ -120,8 +120,8 @@ export class AnalyticsProcessor {
 
       // Generate analytics data
       DisplayService.displayProgress('Generating analytics data...');
-      const sinceDate = options.since || '30d';
-      const untilDate = options.until || new Date().toISOString().split('T')[0] || '2025-12-31';
+      const sinceDate = this.parseDateString(options.since);
+      const untilDate = this.parseDateString(options.until);
       const focusArea = options.focus || 'all';
       const analyticsData = await this.dataService.generateAnalyticsData(
         [...commits], // Convert readonly array to mutable array
@@ -165,6 +165,11 @@ export class AnalyticsProcessor {
     DisplayService.displayProgress('Generating JSON output...');
 
     const jsonContent = JSON.stringify(analyticsData, null, 2);
+    
+    // Ensure the directory exists before writing the file
+    const outputDir = path.dirname(outputPath);
+    await fs.mkdir(outputDir, { recursive: true });
+    
     await fs.writeFile(outputPath, jsonContent, 'utf-8');
   }
 
@@ -178,6 +183,11 @@ export class AnalyticsProcessor {
     DisplayService.displayProgress('Generating summary output...');
 
     const summary = this.generateTextSummary(analyticsData);
+    
+    // Ensure the directory exists before writing the file
+    const outputDir = path.dirname(outputPath);
+    await fs.mkdir(outputDir, { recursive: true });
+    
     await fs.writeFile(outputPath, summary, 'utf-8');
   }
 
@@ -203,6 +213,10 @@ export class AnalyticsProcessor {
       analyticsData,
       dashboardConfig
     );
+
+    // Ensure the directory exists before writing the file
+    const outputDir = path.dirname(outputPath);
+    await fs.mkdir(outputDir, { recursive: true });
 
     await fs.writeFile(outputPath, dashboardHtml, 'utf-8');
   }
@@ -258,7 +272,7 @@ export class AnalyticsProcessor {
     return `
 # 📊 Development Analytics Summary
 
-**Period:** ${analyticsData.period.since} to ${analyticsData.period.until} (${analyticsData.period.days} days)
+**Period:** ${analyticsData.period.since} to ${analyticsData.period.until} (${analyticsData.period.days === 0 ? 'All time' : `${analyticsData.period.days} days`})
 **Repository:** ${analyticsData.repository.name} (${analyticsData.repository.branch})
 **Generated:** ${new Date(analyticsData.generatedAt).toLocaleString()}
 
@@ -362,7 +376,7 @@ ${quality.improvementSuggestions.map(suggestion => `- ${suggestion}`).join('\n')
     console.log(chalk.green('✅ Analytics generated successfully!'));
     console.log();
     console.log(chalk.blue('📊 Summary:'));
-    console.log(chalk.white(`  • Period: ${analyticsData.period.days} days`));
+    console.log(chalk.white(`  • Period: ${analyticsData.period.days === 0 ? 'All time' : `${analyticsData.period.days} days`}`));
     console.log(chalk.white(`  • Commits: ${analyticsData.commits.totalCommits}`));
     console.log(chalk.white(`  • Authors: ${analyticsData.collaboration.totalAuthors}`));
     console.log(
@@ -380,6 +394,54 @@ ${quality.improvementSuggestions.map(suggestion => `- ${suggestion}`).join('\n')
       console.log(chalk.white(`  file://${path.resolve(outputPath)}`));
       console.log();
     }
+  }
+
+  /**
+   * Parse date string (handles relative dates like '7d', '30d', etc.)
+   */
+  private parseDateString(dateStr: string | undefined): string | undefined {
+    // Default values
+    if (!dateStr) {
+      // Return undefined to indicate we want all commits
+      return undefined;
+    }
+
+    // Type assertion after null check
+    const date: string = dateStr as string;
+
+    // Handle relative dates
+    if (date.endsWith('d')) {
+      const days = parseInt(date.slice(0, -1));
+      if (!isNaN(days)) {
+        const dateObj = new Date();
+        dateObj.setDate(dateObj.getDate() - days);
+        // @ts-ignore
+        return dateObj.toISOString().split('T')[0];
+      }
+    }
+
+    // Handle 'today'
+    if (date === 'today') {
+      // @ts-ignore
+      return new Date().toISOString().split('T')[0];
+    }
+
+    // Handle 'yesterday'
+    if (date === 'yesterday') {
+      const dateObj = new Date();
+      dateObj.setDate(dateObj.getDate() - 1);
+      // @ts-ignore
+      return dateObj.toISOString().split('T')[0];
+    }
+
+    // Handle absolute dates (YYYY-MM-DD format)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
+
+    // Default to today if parsing fails
+    // @ts-ignore
+    return new Date().toISOString().split('T')[0];
   }
 
   /**

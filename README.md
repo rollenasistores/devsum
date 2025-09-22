@@ -13,14 +13,17 @@
 
 **AI-Powered Git Accomplishment Reports**
 
-_Transform your git commits into professional accomplishment reports with the power of AI_
+_Transform your git commits into professional accomplishment reports with the
+power of AI_
 
 [![npm version](https://badge.fury.io/js/@rollenasistores%2Fdevsum.svg)](https://badge.fury.io/js/@rollenasistores%2Fdevsum.svg)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Node.js](https://img.shields.io/badge/Node.js-43853D?logo=node.js&logoColor=white)](https://nodejs.org)
 
-[🚀 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [🎯 Features](#-features) • [🤖 AI Providers](#-ai-providers) • [💡 Examples](#-examples)
+[🚀 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) •
+[🎯 Features](#-features) • [🤖 AI Providers](#-ai-providers) •
+[💡 Examples](#-examples)
 
 </div>
 
@@ -28,7 +31,9 @@ _Transform your git commits into professional accomplishment reports with the po
 
 ## 🎯 What is DevSum?
 
-DevSum CLI is a powerful command-line tool that automatically generates professional accomplishment reports from your git commit history using AI. Perfect for:
+DevSum CLI is a powerful command-line tool that automatically generates
+professional accomplishment reports from your git commit history using AI.
+Perfect for:
 
 - **📊 Performance Reviews** - Showcase your technical contributions
 - **🎯 Sprint Reports** - Summarize team accomplishments
@@ -276,7 +281,8 @@ devsum report --since 3m        # Last 3 months
 
 ### 📁 Output Structure
 
-Reports are saved to `./reports/` by default (configurable) with timestamped filenames:
+Reports are saved to `./reports/` by default (configurable) with timestamped
+filenames:
 
 ```
 reports/
@@ -308,9 +314,10 @@ devsum report --since 7d --output ./reports/weekly-team-report.md
 
 ## 📋 Executive Summary
 
-The development team has demonstrated strong productivity this week with significant
-progress across multiple features. Key highlights include the implementation of user
-authentication, performance optimizations, and comprehensive testing coverage...
+The development team has demonstrated strong productivity this week with
+significant progress across multiple features. Key highlights include the
+implementation of user authentication, performance optimizations, and
+comprehensive testing coverage...
 
 ## 🎯 Key Accomplishments
 
@@ -468,7 +475,8 @@ DEBUG=devsum* devsum report --since 7d
 We welcome contributions! Here's how to get started:
 
 1. **Fork** the repository
-2. **Clone** your fork: `git clone https://github.com/rollenasistores/devsum.git`
+2. **Clone** your fork:
+   `git clone https://github.com/rollenasistores/devsum.git`
 3. **Install** dependencies: `npm install`
 4. **Create** a feature branch: `git checkout -b feature/amazing-feature`
 5. **Make** your changes
@@ -488,14 +496,17 @@ npm run lint     # Check code style
 
 ## 📜 License
 
-This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **Apache License 2.0** - see the
+[LICENSE](LICENSE) file for details.
 
 ## 🙋 Support
 
-- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/rollenasistores/devsum/issues)
-- 💬 **Discussions:** [GitHub Discussions](https://github.com/rollenasistores/devsum/discussions)
-- 📧 **Email:** support@devsum.dev
-- 🐦 **Twitter:** [@devsum_cli](https://twitter.com/devsum_cli)
+- 🐛 **Bug Reports:**
+  [GitHub Issues](https://github.com/rollenasistores/devsum/issues)
+- 💬 **Discussions:**
+  [GitHub Discussions](https://github.com/rollenasistores/devsum/discussions)
+- 📧 **Email:** asistoresrlc1@gmail.com
+- 🐦 **Twitter:** [@devsum_cli](https://twitter.com/fpsaltair)
 
 ## 🗺️ Roadmap
 
@@ -504,11 +515,12 @@ This project is licensed under the **Apache License 2.0** - see the [LICENSE](LI
 - [x] **AI-Powered Commit Messages** - Automated commit message generation
 - [x] **Update Checking System** - Automatic update notifications
 - [x] **Automated Commit Workflow** - Full automation with branch management
+- [x] **Analytics Dashboard** - Interactive web-based insights with charts and
+      visualizations
 - [ ] **PDF Export** - Professional PDF reports
 - [ ] **Team Collaboration** - Multi-user support
 - [ ] **Integration APIs** - Slack, Teams, Jira
 - [ ] **Custom Templates** - Personalized report formats
-- [ ] **Analytics Dashboard** - Web-based insights
 - [ ] **Multi-Repository** - Aggregate reports across repos
 
 ## ⭐ Star History
@@ -521,7 +533,8 @@ This project is licensed under the **Apache License 2.0** - see the [LICENSE](LI
 
 **Made with ❤️ by developers, for developers**
 
-_If DevSum helps you showcase your accomplishments, please consider giving it a ⭐!_
+_If DevSum helps you showcase your accomplishments, please consider giving it a
+⭐!_
 
 [⬆️ Back to Top](#-devsum-cli)
 

@@ -40,7 +40,7 @@ export class CommitCommand {
     const autoOptions = {
       ...options,
       auto: options.noAuto ? false : options.auto !== false, // Default to true unless --no-auto or explicitly false
-      length: options.length || 'detailed', // Default to detailed for better commit messages
+      length: options.auto ? 'detailed' : options.length || 'medium', // Auto mode uses detailed, others use medium
       conventional: options.conventional !== false, // Default to conventional format
     };
 

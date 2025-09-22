@@ -112,6 +112,34 @@ export class CommitProcessor {
       const branchInfo = await this.branchManager.getBranchInfo();
       DisplayService.displayBranchInfo(branchInfo);
 
+      // Handle auto mode - check for unstaged changes first and add them
+      if (options.auto) {
+        const unstagedChanges = await this.gitService.getUnstagedChanges();
+        const hasUnstagedChanges =
+          unstagedChanges.modified.length > 0 ||
+          unstagedChanges.untracked.length > 0 ||
+          unstagedChanges.deleted.length > 0;
+
+        if (hasUnstagedChanges) {
+          console.log();
+          console.log(chalk.yellow('📁 Unstaged changes detected:'));
+          if (unstagedChanges.modified.length > 0) {
+            console.log(chalk.gray(`   Modified: ${unstagedChanges.modified.join(', ')}`));
+          }
+          if (unstagedChanges.untracked.length > 0) {
+            console.log(chalk.gray(`   New files: ${unstagedChanges.untracked.join(', ')}`));
+          }
+          if (unstagedChanges.deleted.length > 0) {
+            console.log(chalk.gray(`   Deleted: ${unstagedChanges.deleted.join(', ')}`));
+          }
+
+          // In auto mode, automatically add all changes without prompting
+          DisplayService.displayProgress('Adding all changes...');
+          await this.gitService.addAll();
+          DisplayService.displayProgress('All changes added to staging', true);
+        }
+      }
+
       // Get staged changes
       DisplayService.displayProgress('Analyzing staged changes...');
       const changesResult = await this.validator.validateStagedChanges();
@@ -272,41 +300,7 @@ export class CommitProcessor {
         console.log(chalk.yellow('⚠️  Skipping branch creation, using current branch'));
       }
 
-      // Step 2: Handle file adding
-      const unstagedChanges = await this.gitService.getUnstagedChanges();
-      const hasUnstagedChanges =
-        unstagedChanges.modified.length > 0 ||
-        unstagedChanges.untracked.length > 0 ||
-        unstagedChanges.deleted.length > 0;
-
-      if (hasUnstagedChanges) {
-        console.log();
-        console.log(chalk.yellow('📁 Unstaged changes detected:'));
-        if (unstagedChanges.modified.length > 0) {
-          console.log(chalk.gray(`   Modified: ${unstagedChanges.modified.join(', ')}`));
-        }
-        if (unstagedChanges.untracked.length > 0) {
-          console.log(chalk.gray(`   New files: ${unstagedChanges.untracked.join(', ')}`));
-        }
-        if (unstagedChanges.deleted.length > 0) {
-          console.log(chalk.gray(`   Deleted: ${unstagedChanges.deleted.join(', ')}`));
-        }
-
-        const addAll = await this.askConfirmation(
-          chalk.cyan('📦 Add all changes to staging? (Y/n): ')
-        );
-
-        if (addAll) {
-          DisplayService.displayProgress('Adding all changes...');
-          await this.gitService.addAll();
-          DisplayService.displayProgress('All changes added to staging', true);
-        } else {
-          // Let user select specific files
-          await this.handleSelectiveFileAdding(unstagedChanges);
-        }
-      }
-
-      // Step 3: Generate commit message from all staged changes
+      // Step 2: Generate commit message from all staged changes
       const updatedChanges = await this.gitService.getStagedChanges();
       if (updatedChanges.stagedFiles.length === 0) {
         console.log();
@@ -330,46 +324,38 @@ export class CommitProcessor {
         emoji: options.emoji || false,
       });
 
-      // Step 4: Commit changes
-      const shouldCommit = await this.askConfirmation(
-        chalk.cyan('💾 Commit these changes? (Y/n): ')
+      // Step 3: Commit changes (auto mode - no confirmation needed)
+      DisplayService.displayProgress('Committing changes...');
+      await this.gitService.commitChanges(commitMessage);
+      DisplayService.displayProgress('Changes committed successfully', true);
+      console.log();
+      console.log(chalk.green('🎉 Commit completed!'));
+      console.log(chalk.gray(`   Message: ${commitMessage}`));
+      console.log(chalk.gray(`   Files: ${updatedChanges.stagedFiles.length} files`));
+      console.log(
+        chalk.gray(
+          `   Changes: +${updatedChanges.diffStats.insertions} -${updatedChanges.diffStats.deletions}`
+        )
       );
 
-      if (shouldCommit) {
-        DisplayService.displayProgress('Committing changes...');
-        await this.gitService.commitChanges(commitMessage);
-        DisplayService.displayProgress('Changes committed successfully', true);
-        console.log();
-        console.log(chalk.green('🎉 Commit completed!'));
-        console.log(chalk.gray(`   Message: ${commitMessage}`));
-        console.log(chalk.gray(`   Files: ${updatedChanges.stagedFiles.length} files`));
-        console.log(
-          chalk.gray(
-            `   Changes: +${updatedChanges.diffStats.insertions} -${updatedChanges.diffStats.deletions}`
-          )
+      // Step 4: Push changes
+      const hasRemote = await this.gitService.hasRemote();
+      if (hasRemote) {
+        const shouldPush = await this.askConfirmation(
+          chalk.cyan('🚀 Push changes to remote? (Y/n): ')
         );
 
-        // Step 5: Push changes
-        const hasRemote = await this.gitService.hasRemote();
-        if (hasRemote) {
-          const shouldPush = await this.askConfirmation(
-            chalk.cyan('🚀 Push changes to remote? (Y/n): ')
-          );
-
-          if (shouldPush) {
-            DisplayService.displayProgress('Pushing to remote...');
-            await this.gitService.pushBranch();
-            DisplayService.displayProgress('Changes pushed successfully', true);
-            console.log();
-            console.log(chalk.green('🚀 Push completed!'));
-          } else {
-            console.log(chalk.yellow('⚠️  Skipping push'));
-          }
+        if (shouldPush) {
+          DisplayService.displayProgress('Pushing to remote...');
+          await this.gitService.pushBranch();
+          DisplayService.displayProgress('Changes pushed successfully', true);
+          console.log();
+          console.log(chalk.green('🚀 Push completed!'));
         } else {
-          console.log(chalk.yellow('⚠️  No remote repository configured, skipping push'));
+          console.log(chalk.yellow('⚠️  Skipping push'));
         }
       } else {
-        console.log(chalk.yellow('❌ Commit cancelled by user'));
+        console.log(chalk.yellow('⚠️  No remote repository configured, skipping push'));
       }
 
       // Handle report generation in auto workflow

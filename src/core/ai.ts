@@ -748,15 +748,15 @@ Use appropriate emojis:
     let lengthInstructions = '';
     switch (length) {
       case 'short':
-        lengthInstructions = 'Generate a SHORT commit message as a bulleted list (2-3 bullet points, each under 50 characters). Focus on the most significant changes only.';
+        lengthInstructions = 'Generate a SHORT commit message as a bulleted list (2-3 bullet points, each 50-80 characters). Focus on the most significant changes only with descriptive sentences.';
         break;
       case 'medium':
         lengthInstructions =
-          'Generate a MEDIUM commit message as a bulleted list (3-5 bullet points, each under 60 characters). Include key changes and improvements.';
+          'Generate a MEDIUM commit message as a bulleted list (3-5 bullet points, each 60-100 characters). Include key changes and improvements with detailed descriptions.';
         break;
       case 'detailed':
         lengthInstructions =
-          'Generate a DETAILED commit message as a bulleted list (4-7 bullet points, each under 70 characters). Provide comprehensive analysis of ALL changes made, including specific functionality added, bugs fixed, refactoring done, and any architectural improvements.';
+          'Generate a DETAILED commit message as a bulleted list (4-7 bullet points, each 80-120 characters). Provide comprehensive analysis of ALL changes made with long, descriptive sentences that explain what was changed, why it was changed, and the impact of the changes.';
         break;
     }
 
@@ -780,18 +780,18 @@ Format the commit message as a bulleted list where each bullet point describes a
 - Use present tense ("Fix bug" not "Fixed bug")
 - Start each bullet with a verb (Fix, Add, Update, Remove, Refactor, etc.)
 - Be specific about what was changed and why
-- Each bullet should be concise but descriptive
+- Each bullet should be a long, descriptive sentence (80-120 characters)
 - Cover ALL significant changes, not just the main ones
-- Include technical details about the implementation
+- Include technical details about the implementation and impact
 
 Examples of good detailed bulleted commit messages:
-- Fix authentication validation bug in login form
-- Add user profile editing functionality with validation
-- Update README with installation and configuration instructions
-- Remove deprecated API endpoints and update client code
-- Refactor database connection handling for better error management
-- Optimize query performance in user search functionality
-- Add comprehensive error handling for file upload operations
+- Fix authentication validation bug in login form that was causing users to be incorrectly rejected during login attempts
+- Add user profile editing functionality with comprehensive validation to ensure data integrity and prevent unauthorized modifications
+- Update README with detailed installation and configuration instructions to help new developers get started quickly
+- Remove deprecated API endpoints and update client code to use the new RESTful endpoints for improved performance
+- Refactor database connection handling to implement better error management and connection pooling for improved reliability
+- Optimize query performance in user search functionality by adding proper database indexes and query optimization
+- Add comprehensive error handling for file upload operations to prevent crashes and provide better user feedback
 
 Generate only the commit message as a bulleted list, no additional text:`;
   }
@@ -861,15 +861,15 @@ Use appropriate emojis:
     let lengthInstructions = '';
     switch (length) {
       case 'short':
-        lengthInstructions = 'Generate a SHORT commit message as a bulleted list (2-3 bullet points, each under 50 characters). Focus on the most significant changes only.';
+        lengthInstructions = 'Generate a SHORT commit message as a bulleted list (2-3 bullet points, each 50-80 characters). Focus on the most significant changes only with descriptive sentences.';
         break;
       case 'medium':
         lengthInstructions =
-          'Generate a MEDIUM commit message as a bulleted list (3-5 bullet points, each under 60 characters). Include key changes and improvements.';
+          'Generate a MEDIUM commit message as a bulleted list (3-5 bullet points, each 60-100 characters). Include key changes and improvements with detailed descriptions.';
         break;
       case 'detailed':
         lengthInstructions =
-          'Generate a DETAILED commit message as a bulleted list (4-7 bullet points, each under 70 characters). Provide comprehensive analysis of ALL changes made, including specific functionality added, bugs fixed, refactoring done, and any architectural improvements.';
+          'Generate a DETAILED commit message as a bulleted list (4-7 bullet points, each 80-120 characters). Provide comprehensive analysis of ALL changes made with long, descriptive sentences that explain what was changed, why it was changed, and the impact of the changes.';
         break;
     }
 
@@ -902,18 +902,18 @@ Format the commit message as a bulleted list where each bullet point describes a
 - Use present tense ("Fix bug" not "Fixed bug")
 - Start each bullet with a verb (Fix, Add, Update, Remove, Refactor, etc.)
 - Be specific about what was changed and why based on the actual diff
-- Each bullet should be concise but descriptive
+- Each bullet should be a long, descriptive sentence (80-120 characters)
 - Cover ALL significant changes visible in the diff
-- Include technical details about the implementation
+- Include technical details about the implementation and impact
 
 Examples of good detailed bulleted commit messages:
-- Fix authentication validation bug in login form
-- Add user profile editing functionality with validation
-- Update README with installation and configuration instructions
-- Remove deprecated API endpoints and update client code
-- Refactor database connection handling for better error management
-- Optimize query performance in user search functionality
-- Add comprehensive error handling for file upload operations
+- Fix authentication validation bug in login form that was causing users to be incorrectly rejected during login attempts
+- Add user profile editing functionality with comprehensive validation to ensure data integrity and prevent unauthorized modifications
+- Update README with detailed installation and configuration instructions to help new developers get started quickly
+- Remove deprecated API endpoints and update client code to use the new RESTful endpoints for improved performance
+- Refactor database connection handling to implement better error management and connection pooling for improved reliability
+- Optimize query performance in user search functionality by adding proper database indexes and query optimization
+- Add comprehensive error handling for file upload operations to prevent crashes and provide better user feedback
 
 Generate only the commit message as a bulleted list, no additional text:`;
   }

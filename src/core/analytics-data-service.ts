@@ -50,8 +50,8 @@ export class AnalyticsDataService {
 
     return {
       period: {
-        since: isAllTime ? 'All time' : (since || ''),
-        until: isAllTime ? 'Present' : (until || ''),
+        since: isAllTime ? 'All time' : since || '',
+        until: isAllTime ? 'Present' : until || '',
         days: isAllTime ? 0 : days, // Use 0 to indicate all time
       },
       repository: {

@@ -748,7 +748,8 @@ Use appropriate emojis:
     let lengthInstructions = '';
     switch (length) {
       case 'short':
-        lengthInstructions = 'Generate a SHORT commit message as a bulleted list (2-3 bullet points, each 50-80 characters). Focus on the most significant changes only with descriptive sentences.';
+        lengthInstructions =
+          'Generate a SHORT commit message as a bulleted list (2-3 bullet points, each 50-80 characters). Focus on the most significant changes only with descriptive sentences.';
         break;
       case 'medium':
         lengthInstructions =
@@ -861,7 +862,8 @@ Use appropriate emojis:
     let lengthInstructions = '';
     switch (length) {
       case 'short':
-        lengthInstructions = 'Generate a SHORT commit message as a bulleted list (2-3 bullet points, each 50-80 characters). Focus on the most significant changes only with descriptive sentences.';
+        lengthInstructions =
+          'Generate a SHORT commit message as a bulleted list (2-3 bullet points, each 50-80 characters). Focus on the most significant changes only with descriptive sentences.';
         break;
       case 'medium':
         lengthInstructions =
@@ -874,9 +876,10 @@ Use appropriate emojis:
     }
 
     // Truncate diff content if it's too long (keep first 2000 characters)
-    const truncatedDiff = diffContent.length > 2000 
-      ? diffContent.substring(0, 2000) + '\n... (diff truncated for brevity)'
-      : diffContent;
+    const truncatedDiff =
+      diffContent.length > 2000
+        ? diffContent.substring(0, 2000) + '\n... (diff truncated for brevity)'
+        : diffContent;
 
     return `Generate a comprehensive commit message for the following changes:
 
@@ -931,8 +934,8 @@ Generate only the commit message as a bulleted list, no additional text:`;
     );
 
     // Filter for bulleted lines (starting with - or *)
-    const bulletLines = cleanedLines.filter(line => 
-      line.startsWith('-') || line.startsWith('*') || line.startsWith('•')
+    const bulletLines = cleanedLines.filter(
+      line => line.startsWith('-') || line.startsWith('*') || line.startsWith('•')
     );
 
     // If we have bulleted lines, use them; otherwise fall back to all lines
@@ -1091,9 +1094,7 @@ Files:
 ${fileSummary}`;
 
     // Build existing branches list
-    const existingBranchesList = existingBranches.length > 0 
-      ? existingBranches.join(', ')
-      : 'none';
+    const existingBranchesList = existingBranches.length > 0 ? existingBranches.join(', ') : 'none';
 
     return `Generate a DIFFERENT git branch name for the following changes:
 

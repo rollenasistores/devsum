@@ -162,11 +162,11 @@ export class CommitProcessor {
       );
       const aiService = AIService.fromProvider(selectedProvider);
       const messageLength = (options.length as 'short' | 'medium' | 'detailed') || 'medium';
-      
+
       // Get detailed diff content for better analysis
       DisplayService.displayProgress('Analyzing code changes...');
       const diffContent = await this.gitService.getStagedDiff();
-      
+
       // Generate commit message with detailed diff analysis
       const commitMessage = await aiService.generateDetailedCommitMessage(changes, diffContent, {
         conventional: options.conventional || false,
@@ -296,13 +296,27 @@ export class CommitProcessor {
       // Check for conflicts and regenerate if needed
       let attempts = 0;
       const maxAttempts = 3;
-      while (await this.branchManager.hasBranchConflict(generatedBranchName) && attempts < maxAttempts) {
+      while (
+        (await this.branchManager.hasBranchConflict(generatedBranchName)) &&
+        attempts < maxAttempts
+      ) {
         attempts++;
-        console.log(chalk.yellow(`⚠️  Branch "${generatedBranchName}" already exists, generating alternative...`));
-        
+        console.log(
+          chalk.yellow(
+            `⚠️  Branch "${generatedBranchName}" already exists, generating alternative...`
+          )
+        );
+
         const existingBranches = await this.branchManager.getAllBranchNames();
-        generatedBranchName = await aiService.generateAlternativeBranchName(changes, existingBranches, generatedBranchName);
-        DisplayService.displayProgress(`Generated alternative branch: ${generatedBranchName}`, true);
+        generatedBranchName = await aiService.generateAlternativeBranchName(
+          changes,
+          existingBranches,
+          generatedBranchName
+        );
+        DisplayService.displayProgress(
+          `Generated alternative branch: ${generatedBranchName}`,
+          true
+        );
       }
 
       if (attempts >= maxAttempts) {
@@ -335,17 +349,21 @@ export class CommitProcessor {
 
       DisplayService.displayProgress('🤖 Generating commit message...');
       const messageLength = (options.length as 'short' | 'medium' | 'detailed') || 'detailed';
-      
+
       // Get detailed diff content for better analysis
       DisplayService.displayProgress('Analyzing code changes...');
       const diffContent = await this.gitService.getStagedDiff();
-      
+
       // Generate commit message with detailed diff analysis
-      const commitMessage = await aiService.generateDetailedCommitMessage(updatedChanges, diffContent, {
-        conventional: options.conventional || false,
-        emoji: options.emoji || false,
-        length: messageLength,
-      });
+      const commitMessage = await aiService.generateDetailedCommitMessage(
+        updatedChanges,
+        diffContent,
+        {
+          conventional: options.conventional || false,
+          emoji: options.emoji || false,
+          length: messageLength,
+        }
+      );
       DisplayService.displayProgress('Commit message generated', true);
 
       // Display the generated message
@@ -504,12 +522,23 @@ export class CommitProcessor {
     // Check for conflicts and regenerate if needed
     let attempts = 0;
     const maxAttempts = 3;
-    while (await this.branchManager.hasBranchConflict(generatedBranchName) && attempts < maxAttempts) {
+    while (
+      (await this.branchManager.hasBranchConflict(generatedBranchName)) &&
+      attempts < maxAttempts
+    ) {
       attempts++;
-      console.log(chalk.yellow(`⚠️  Branch "${generatedBranchName}" already exists, generating alternative...`));
-      
+      console.log(
+        chalk.yellow(
+          `⚠️  Branch "${generatedBranchName}" already exists, generating alternative...`
+        )
+      );
+
       const existingBranches = await this.branchManager.getAllBranchNames();
-      generatedBranchName = await aiService.generateAlternativeBranchName(changes, existingBranches, generatedBranchName);
+      generatedBranchName = await aiService.generateAlternativeBranchName(
+        changes,
+        existingBranches,
+        generatedBranchName
+      );
       DisplayService.displayProgress(`Generated alternative branch: ${generatedBranchName}`, true);
     }
 

@@ -165,11 +165,11 @@ export class AnalyticsProcessor {
     DisplayService.displayProgress('Generating JSON output...');
 
     const jsonContent = JSON.stringify(analyticsData, null, 2);
-    
+
     // Ensure the directory exists before writing the file
     const outputDir = path.dirname(outputPath);
     await fs.mkdir(outputDir, { recursive: true });
-    
+
     await fs.writeFile(outputPath, jsonContent, 'utf-8');
   }
 
@@ -183,11 +183,11 @@ export class AnalyticsProcessor {
     DisplayService.displayProgress('Generating summary output...');
 
     const summary = this.generateTextSummary(analyticsData);
-    
+
     // Ensure the directory exists before writing the file
     const outputDir = path.dirname(outputPath);
     await fs.mkdir(outputDir, { recursive: true });
-    
+
     await fs.writeFile(outputPath, summary, 'utf-8');
   }
 
@@ -376,7 +376,11 @@ ${quality.improvementSuggestions.map(suggestion => `- ${suggestion}`).join('\n')
     console.log(chalk.green('✅ Analytics generated successfully!'));
     console.log();
     console.log(chalk.blue('📊 Summary:'));
-    console.log(chalk.white(`  • Period: ${analyticsData.period.days === 0 ? 'All time' : `${analyticsData.period.days} days`}`));
+    console.log(
+      chalk.white(
+        `  • Period: ${analyticsData.period.days === 0 ? 'All time' : `${analyticsData.period.days} days`}`
+      )
+    );
     console.log(chalk.white(`  • Commits: ${analyticsData.commits.totalCommits}`));
     console.log(chalk.white(`  • Authors: ${analyticsData.collaboration.totalAuthors}`));
     console.log(

@@ -10,7 +10,7 @@ import { AnalyticsPreview } from "@/components/analytics-preview"
 import { CommunityStats } from "@/components/community-stats"
 import { Footer } from "@/components/footer"
 
-export default function Page() {
+export default async function Page() {
   return (
     <main className="min-h-screen">
       <Header />

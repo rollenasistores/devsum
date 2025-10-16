@@ -1,21 +1,18 @@
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Terminal, Github, ArrowRight } from "lucide-react"
+import { Github, ArrowRight } from "lucide-react"
 import { TerminalWindow } from "@/components/ui/terminal-window"
 import { AnimatedTerminal } from "@/components/animated-terminal"
+import { VersionBadge } from "@/components/version-badge"
 import Link from "next/link"
 
-export function HeroSection() {
+export async function HeroSection() {
   return (
     <section className="relative overflow-hidden border-b border-border">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
 
       <div className="relative mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <Badge variant="secondary" className="mb-4 gap-2">
-            <Terminal className="h-3 w-3" />
-            <span className="font-mono text-xs">v1.0.0</span>
-          </Badge>
+          <VersionBadge className="mb-4" />
 
           <h1 className="text-5xl font-bold tracking-tight text-foreground sm:text-7xl text-balance">
             Transform Git Commits into <span className="text-primary">Professional Reports</span>

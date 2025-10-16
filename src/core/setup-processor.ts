@@ -1,4 +1,4 @@
-import inquirer from 'inquirer';
+import { LazyLoader } from './lazy-loader.js';
 import chalk from 'chalk';
 import { configManager } from './config.js';
 import { Config, AIProvider } from '../types/index.js';
@@ -135,6 +135,7 @@ export class SetupProcessor {
    * Get user action choice
    */
   private async getUserAction(): Promise<string> {
+    const inquirer = await LazyLoader.loadInquirer();
     const actionResult = await inquirer.prompt([
       {
         type: 'list',
@@ -158,6 +159,7 @@ export class SetupProcessor {
    * Confirm reset action
    */
   private async confirmReset(): Promise<boolean> {
+    const inquirer = await LazyLoader.loadInquirer();
     const { confirm } = await inquirer.prompt([
       {
         type: 'confirm',
@@ -195,6 +197,7 @@ export class SetupProcessor {
    * Handle edit provider action
    */
   private async handleEditProvider(config: Config): Promise<void> {
+    const inquirer = await LazyLoader.loadInquirer();
     const { providerName } = await inquirer.prompt([
       {
         type: 'list',
@@ -219,6 +222,7 @@ export class SetupProcessor {
    * Handle remove provider action
    */
   private async handleRemoveProvider(config: Config): Promise<void> {
+    const inquirer = await LazyLoader.loadInquirer();
     const { providerName } = await inquirer.prompt([
       {
         type: 'list',
@@ -241,6 +245,7 @@ export class SetupProcessor {
    * Handle set default provider action
    */
   private async handleSetDefault(config: Config): Promise<void> {
+    const inquirer = await LazyLoader.loadInquirer();
     const { providerName } = await inquirer.prompt([
       {
         type: 'list',
@@ -263,13 +268,14 @@ export class SetupProcessor {
    * Handle initial setup
    */
   private async handleInitialSetup(config: Config): Promise<void> {
+    const inquirer = await LazyLoader.loadInquirer();
     const { defaultOutput } = await inquirer.prompt([
       {
         type: 'input',
         name: 'defaultOutput',
         message: '📁 Default output directory:',
         default: './reports',
-        validate: input => {
+        validate: (input: string) => {
           if (!input.trim()) {
             return '❌ Output directory is required';
           }
@@ -291,12 +297,13 @@ export class SetupProcessor {
    * Add a new provider through interactive prompts
    */
   private async addProvider(): Promise<AIProvider> {
+    const inquirer = await LazyLoader.loadInquirer();
     const answers = await inquirer.prompt([
       {
         type: 'input',
         name: 'name',
         message: '🏷️  Provider name (e.g., "work-gemini", "personal-claude"):',
-        validate: input => {
+        validate: (input: string) => {
           if (!input.trim()) {
             return '❌ Provider name is required';
           }
@@ -334,7 +341,7 @@ export class SetupProcessor {
         type: 'password',
         name: 'apiKey',
         message: '🔑 Enter your API key:',
-        validate: input => this.validateApiKey(input, answers.provider),
+        validate: (input: string) => this.validateApiKey(input, answers.provider),
       },
     ]);
 

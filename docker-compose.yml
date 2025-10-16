@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  devsum:
+    build: .
+    container_name: devsum-cli
+    volumes:
+      # Mount git repository for analysis
+      - .:/workspace:ro
+      # Mount config directory for persistence
+      - devsum-config:/home/devsum/.config/devsum
+      # Mount reports directory for output
+      - devsum-reports:/app/reports
+    working_dir: /workspace
+    environment:
+      - NODE_ENV=production
+      - DEVBOT_CONFIG_DIR=/home/devsum/.config/devsum
+      - DEVBOT_REPORTS_DIR=/app/reports
+    # Override default command
+    command: ['node', '/app/dist/bin/devsum.js', 'report', '--since', '7d']
+
+  # Optional: Web interface for reports
+  devsum-web:
+    build: .
+    container_name: devsum-web
+    ports:
+      - '3000:3000'
+    volumes:
+      - devsum-reports:/app/reports:ro
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    command:
+      [
+        'node',
+        '-e',
+        "require('http').createServer((req, res) => { res.writeHead(200, {'Content-Type': 'text/html'}); res.end('<h1>DevSum Reports</h1><p>Reports are available in /app/reports</p>'); }).listen(3000)",
+      ]
+
+volumes:
+  devsum-config:
+    driver: local
+  devsum-reports:
+    driver: local
+
+networks:
+  default:
+    name: devsum-network

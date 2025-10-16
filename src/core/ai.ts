@@ -1,6 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import Anthropic from '@anthropic-ai/sdk';
-import OpenAI from 'openai';
+import { LazyLoader } from './lazy-loader.js';
 import {
   GitCommit,
   AIResponse,
@@ -16,9 +14,7 @@ import {
  * Follows single responsibility principle and proper TypeScript practices
  */
 export class AIService {
-  private geminiClient?: GoogleGenerativeAI;
-  private claudeClient?: Anthropic;
-  private openaiClient?: OpenAI;
+  private client?: any;
   private readonly provider: AIProviderType;
   private readonly apiKey: string;
   private readonly model: string;
@@ -27,8 +23,6 @@ export class AIService {
     this.provider = provider;
     this.apiKey = apiKey;
     this.model = model;
-
-    this.initializeClients();
   }
 
   /**
@@ -40,21 +34,11 @@ export class AIService {
   }
 
   /**
-   * Initialize AI clients based on provider type
+   * Initialize AI client lazily
    */
-  private initializeClients(): void {
-    switch (this.provider) {
-      case 'gemini':
-        this.geminiClient = new GoogleGenerativeAI(this.apiKey);
-        break;
-      case 'claude':
-        this.claudeClient = new Anthropic({ apiKey: this.apiKey });
-        break;
-      case 'openai':
-        this.openaiClient = new OpenAI({ apiKey: this.apiKey });
-        break;
-      default:
-        throw new Error(`Unsupported AI provider: ${this.provider}`);
+  private async initializeClient(): Promise<void> {
+    if (!this.client) {
+      this.client = await LazyLoader.loadAIService(this.provider, this.apiKey, this.model);
     }
   }
 
@@ -65,6 +49,7 @@ export class AIService {
     commits: readonly GitCommit[],
     length: ReportLength = 'detailed'
   ): Promise<AIResponse> {
+    await this.initializeClient();
     const prompt = this.buildReportPrompt(commits, length);
 
     try {
@@ -81,6 +66,7 @@ export class AIService {
     changes: StagedChanges,
     options: CommitMessageOptions
   ): Promise<string> {
+    await this.initializeClient();
     const prompt = this.buildCommitPrompt(changes, options);
 
     try {
@@ -94,6 +80,7 @@ export class AIService {
    * Generate branch name from staged changes
    */
   public async generateBranchName(changes: StagedChanges): Promise<string> {
+    await this.initializeClient();
     const prompt = this.buildBranchNamePrompt(changes);
 
     try {
@@ -111,6 +98,7 @@ export class AIService {
     existingBranches: string[],
     originalName: string
   ): Promise<string> {
+    await this.initializeClient();
     const prompt = this.buildAlternativeBranchNamePrompt(changes, existingBranches, originalName);
 
     try {
@@ -128,6 +116,7 @@ export class AIService {
     diffContent: string,
     options: CommitMessageOptions
   ): Promise<string> {
+    await this.initializeClient();
     const prompt = this.buildDetailedCommitPrompt(changes, diffContent, options);
 
     try {
@@ -141,6 +130,7 @@ export class AIService {
    * Generate pull request title from staged changes
    */
   public async generatePullRequestTitle(changes: StagedChanges): Promise<string> {
+    await this.initializeClient();
     const prompt = this.buildPullRequestTitlePrompt(changes);
 
     try {
@@ -225,11 +215,11 @@ export class AIService {
   }
 
   private async generateWithGemini(prompt: string): Promise<AIResponse> {
-    if (!this.geminiClient) {
+    if (!this.client) {
       throw new Error('Gemini client not initialized');
     }
 
-    const model = this.geminiClient.getGenerativeModel({
+    const model = this.client.getGenerativeModel({
       model: this.model || 'gemini-2.0-flash',
     });
 
@@ -241,11 +231,11 @@ export class AIService {
   }
 
   private async generateWithClaude(prompt: string): Promise<AIResponse> {
-    if (!this.claudeClient) {
+    if (!this.client) {
       throw new Error('Claude client not initialized');
     }
 
-    const response = await this.claudeClient.messages.create({
+    const response = await this.client.messages.create({
       model: this.model || 'claude-3-5-sonnet-20241022',
       max_tokens: 4000,
       temperature: 0.7,
@@ -259,19 +249,19 @@ export class AIService {
 
     // Extract text from Claude's response
     const text = response.content
-      .filter(block => block.type === 'text')
-      .map(block => (block as any).text)
+      .filter((block: any) => block.type === 'text')
+      .map((block: any) => block.text)
       .join('\n');
 
     return this.parseResponse(text);
   }
 
   private async generateWithOpenAI(prompt: string): Promise<AIResponse> {
-    if (!this.openaiClient) {
+    if (!this.client) {
       throw new Error('OpenAI client not initialized');
     }
 
-    const response = await this.openaiClient.chat.completions.create({
+    const response = await this.client.chat.completions.create({
       model: this.model || 'gpt-4',
       max_tokens: 4000,
       temperature: 0.7,
@@ -501,6 +491,7 @@ Focus on the impact and value of the changes rather than just listing commits. G
    * Fetch available Gemini models
    */
   private static async fetchGeminiModels(apiKey: string): Promise<readonly string[]> {
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const client = new GoogleGenerativeAI(apiKey);
 
     try {
@@ -523,7 +514,7 @@ Focus on the impact and value of the changes rather than just listing commits. G
    * Test model availability for Gemini
    */
   private static async testModelsAvailability(
-    client: GoogleGenerativeAI,
+    client: any,
     models: readonly string[]
   ): Promise<readonly string[]> {
     const availableModels: string[] = [];
@@ -546,7 +537,8 @@ Focus on the impact and value of the changes rather than just listing commits. G
    * Fetch available Claude models
    */
   private static async fetchClaudeModels(apiKey: string): Promise<readonly string[]> {
-    const client = new Anthropic({ apiKey });
+    const Anthropic = await import('@anthropic-ai/sdk');
+    const client = new Anthropic.default({ apiKey });
 
     try {
       const knownModels = [
@@ -568,7 +560,7 @@ Focus on the impact and value of the changes rather than just listing commits. G
    * Test Claude model availability
    */
   private static async testClaudeModelsAvailability(
-    client: Anthropic,
+    client: any,
     models: readonly string[]
   ): Promise<readonly string[]> {
     const availableModels: string[] = [];
@@ -594,7 +586,8 @@ Focus on the impact and value of the changes rather than just listing commits. G
    * Fetch available OpenAI models
    */
   private static async fetchOpenAIModels(apiKey: string): Promise<readonly string[]> {
-    const client = new OpenAI({ apiKey });
+    const OpenAI = await import('openai');
+    const client = new OpenAI.default({ apiKey });
 
     try {
       const response = await client.models.list();
@@ -628,11 +621,11 @@ Focus on the impact and value of the changes rather than just listing commits. G
   }
 
   private async generateCommitWithGemini(prompt: string): Promise<string> {
-    if (!this.geminiClient) {
+    if (!this.client) {
       throw new Error('Gemini client not initialized');
     }
 
-    const model = this.geminiClient.getGenerativeModel({
+    const model = this.client.getGenerativeModel({
       model: this.model || 'gemini-2.0-flash',
     });
 
@@ -644,11 +637,11 @@ Focus on the impact and value of the changes rather than just listing commits. G
   }
 
   private async generateCommitWithClaude(prompt: string): Promise<string> {
-    if (!this.claudeClient) {
+    if (!this.client) {
       throw new Error('Claude client not initialized');
     }
 
-    const response = await this.claudeClient.messages.create({
+    const response = await this.client.messages.create({
       model: this.model || 'claude-3-5-sonnet-20241022',
       max_tokens: 200,
       temperature: 0.7,
@@ -662,19 +655,19 @@ Focus on the impact and value of the changes rather than just listing commits. G
 
     // Extract text from Claude's response
     const text = response.content
-      .filter(block => block.type === 'text')
-      .map(block => (block as any).text)
+      .filter((block: any) => block.type === 'text')
+      .map((block: any) => block.text)
       .join('\n');
 
     return this.parseCommitResponse(text);
   }
 
   private async generateCommitWithOpenAI(prompt: string): Promise<string> {
-    if (!this.openaiClient) {
+    if (!this.client) {
       throw new Error('OpenAI client not initialized');
     }
 
-    const response = await this.openaiClient.chat.completions.create({
+    const response = await this.client.chat.completions.create({
       model: this.model || 'gpt-4',
       max_tokens: 200,
       temperature: 0.7,
@@ -961,11 +954,11 @@ Generate only the commit message as a bulleted list, no additional text:`;
   }
 
   private async generateBranchNameWithGemini(prompt: string): Promise<string> {
-    if (!this.geminiClient) {
+    if (!this.client) {
       throw new Error('Gemini client not initialized');
     }
 
-    const model = this.geminiClient.getGenerativeModel({
+    const model = this.client.getGenerativeModel({
       model: this.model || 'gemini-2.0-flash',
     });
 
@@ -977,11 +970,11 @@ Generate only the commit message as a bulleted list, no additional text:`;
   }
 
   private async generateBranchNameWithClaude(prompt: string): Promise<string> {
-    if (!this.claudeClient) {
+    if (!this.client) {
       throw new Error('Claude client not initialized');
     }
 
-    const response = await this.claudeClient.messages.create({
+    const response = await this.client.messages.create({
       model: this.model || 'claude-3-5-sonnet-20241022',
       max_tokens: 50,
       temperature: 0.7,
@@ -995,19 +988,19 @@ Generate only the commit message as a bulleted list, no additional text:`;
 
     // Extract text from Claude's response
     const text = response.content
-      .filter(block => block.type === 'text')
-      .map(block => (block as any).text)
+      .filter((block: any) => block.type === 'text')
+      .map((block: any) => block.text)
       .join('\n');
 
     return this.parseBranchNameResponse(text);
   }
 
   private async generateBranchNameWithOpenAI(prompt: string): Promise<string> {
-    if (!this.openaiClient) {
+    if (!this.client) {
       throw new Error('OpenAI client not initialized');
     }
 
-    const response = await this.openaiClient.chat.completions.create({
+    const response = await this.client.chat.completions.create({
       model: this.model || 'gpt-4',
       max_tokens: 50,
       temperature: 0.7,
@@ -1199,11 +1192,11 @@ Generate only the pull request title, no additional text:`;
   }
 
   private async generatePullRequestTitleWithGemini(prompt: string): Promise<string> {
-    if (!this.geminiClient) {
+    if (!this.client) {
       throw new Error('Gemini client not initialized');
     }
 
-    const model = this.geminiClient.getGenerativeModel({
+    const model = this.client.getGenerativeModel({
       model: this.model || 'gemini-2.0-flash',
     });
 
@@ -1215,11 +1208,11 @@ Generate only the pull request title, no additional text:`;
   }
 
   private async generatePullRequestTitleWithClaude(prompt: string): Promise<string> {
-    if (!this.claudeClient) {
+    if (!this.client) {
       throw new Error('Claude client not initialized');
     }
 
-    const response = await this.claudeClient.messages.create({
+    const response = await this.client.messages.create({
       model: this.model || 'claude-3-5-sonnet-20241022',
       max_tokens: 50,
       temperature: 0.7,
@@ -1233,19 +1226,19 @@ Generate only the pull request title, no additional text:`;
 
     // Extract text from Claude's response
     const text = response.content
-      .filter(block => block.type === 'text')
-      .map(block => (block as any).text)
+      .filter((block: any) => block.type === 'text')
+      .map((block: any) => block.text)
       .join('\n');
 
     return this.parsePullRequestTitleResponse(text);
   }
 
   private async generatePullRequestTitleWithOpenAI(prompt: string): Promise<string> {
-    if (!this.openaiClient) {
+    if (!this.client) {
       throw new Error('OpenAI client not initialized');
     }
 
-    const response = await this.openaiClient.chat.completions.create({
+    const response = await this.client.chat.completions.create({
       model: this.model || 'gpt-4',
       max_tokens: 50,
       temperature: 0.7,

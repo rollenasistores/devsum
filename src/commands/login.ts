@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getVersion } from '../utils/version.js';
+import { usageTracker } from '../core/usage-tracker.js';
 
 /**
  * Login command class following TypeScript guidelines
@@ -29,12 +30,36 @@ export class LoginCommand {
    * Execute the login command
    */
   public async execute(): Promise<void> {
-    this.displayWelcome();
-    this.displayFreeMode();
-    this.displayQuickStart();
-    this.displayExampleCommands();
-    this.displayComingSoon();
-    this.displayFooter();
+    const startTime = Date.now()
+    let success = false
+    let metadata: any = {}
+
+    try {
+      this.displayWelcome();
+      this.displayFreeMode();
+      this.displayQuickStart();
+      this.displayExampleCommands();
+      this.displayComingSoon();
+      this.displayFooter();
+      success = true
+    } catch (error) {
+      success = false
+      throw error
+    } finally {
+      // Track usage
+      const duration = Date.now() - startTime
+      metadata = {
+        duration,
+        command: 'login'
+      }
+
+      await usageTracker.trackUsage({
+        commandType: 'commit', // Use commit as the closest match for login
+        userId: await usageTracker.getUserId(),
+        success,
+        metadata
+      })
+    }
   }
 
   /**

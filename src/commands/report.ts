@@ -55,7 +55,7 @@ export class ReportCommand {
 
       await usageTracker.trackUsage({
         commandType: 'report',
-        userId: usageTracker.getUserId(),
+        userId: await usageTracker.getUserId(),
         success,
         metadata
       })

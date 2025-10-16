@@ -2,11 +2,11 @@ import { v4 as uuidv4 } from 'uuid'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import { homedir } from 'os'
+import { configManager } from './config.js'
 
 interface UsageConfig {
   enabled: boolean
   userId: string
-  apiEndpoint: string
 }
 
 interface UsageData {
@@ -24,14 +24,30 @@ interface UsageData {
 export class UsageTracker {
   private config: UsageConfig
   private configPath: string
+  private readonly API_ENDPOINT = 'http://localhost:3000/api/usage/track'
 
   constructor() {
     this.configPath = join(homedir(), '.devsum', 'usage-config.json')
-    this.config = this.loadConfig()
+    this.config = { enabled: true, userId: uuidv4() }
+    this.initializeConfig()
   }
 
-  private loadConfig(): UsageConfig {
+  private async initializeConfig(): Promise<void> {
+    this.config = await this.loadConfig()
+  }
+
+  private async loadConfig(): Promise<UsageConfig> {
     try {
+      // Try to load from main config first
+      const mainConfig = await configManager.loadConfig()
+      if (mainConfig?.telemetry) {
+        return {
+          enabled: mainConfig.telemetry.enabled,
+          userId: this.getOrCreateUserId()
+        }
+      }
+
+      // Fallback to usage-specific config
       if (existsSync(this.configPath)) {
         const configData = readFileSync(this.configPath, 'utf8')
         return JSON.parse(configData)
@@ -43,16 +59,31 @@ export class UsageTracker {
     // Default config
     return {
       enabled: true,
-      userId: uuidv4(),
-      apiEndpoint: 'https://devsum.vercel.app/api/usage/track'
+      userId: this.getOrCreateUserId()
     }
   }
 
-  private saveConfig(): void {
+  private getOrCreateUserId(): string {
+    try {
+      if (existsSync(this.configPath)) {
+        const configData = readFileSync(this.configPath, 'utf8')
+        const config = JSON.parse(configData)
+        if (config.userId) {
+          return config.userId
+        }
+      }
+    } catch (error) {
+      // Ignore errors, will create new ID
+    }
+    return uuidv4()
+  }
+
+  private async saveConfig(): Promise<void> {
     try {
       const configDir = join(homedir(), '.devsum')
       if (!existsSync(configDir)) {
-        require('fs').mkdirSync(configDir, { recursive: true })
+        const { mkdirSync } = await import('fs')
+        mkdirSync(configDir, { recursive: true })
       }
       writeFileSync(this.configPath, JSON.stringify(this.config, null, 2))
     } catch (error) {
@@ -61,6 +92,11 @@ export class UsageTracker {
   }
 
   public async trackUsage(data: UsageData): Promise<void> {
+    // Ensure config is loaded
+    if (!this.config.userId) {
+      this.config = await this.loadConfig()
+    }
+
     if (!this.config.enabled) {
       return
     }
@@ -73,7 +109,7 @@ export class UsageTracker {
         metadata: data.metadata
       }
 
-      const response = await fetch(this.config.apiEndpoint, {
+      const response = await fetch(this.API_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -91,24 +127,23 @@ export class UsageTracker {
     }
   }
 
-  public setEnabled(enabled: boolean): void {
+  public async setEnabled(enabled: boolean): Promise<void> {
     this.config.enabled = enabled
-    this.saveConfig()
+    await this.saveConfig()
   }
 
-  public isEnabled(): boolean {
+  public async isEnabled(): Promise<boolean> {
+    this.config = await this.loadConfig()
     return this.config.enabled
   }
 
-  public getUserId(): string {
+  public async getUserId(): Promise<string> {
+    this.config = await this.loadConfig()
     return this.config.userId
   }
 
-  public setApiEndpoint(endpoint: string): void {
-    this.config.apiEndpoint = endpoint
-    this.saveConfig()
-  }
 }
 
 // Singleton instance
 export const usageTracker = new UsageTracker()
+

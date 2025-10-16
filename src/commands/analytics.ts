@@ -53,7 +53,7 @@ export class AnalyticsCommand {
 
       await usageTracker.trackUsage({
         commandType: 'analyze',
-        userId: usageTracker.getUserId(),
+        userId: await usageTracker.getUserId(),
         success,
         metadata
       })

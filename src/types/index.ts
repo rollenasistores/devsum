@@ -23,6 +23,9 @@ export interface Config {
   providers: AIProvider[];
   defaultOutput: string;
   defaultProvider?: string | undefined;
+  telemetry?: {
+    enabled: boolean;
+  };
 }
 
 /**

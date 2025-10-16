@@ -68,7 +68,7 @@ export class CommitCommand {
 
       await usageTracker.trackUsage({
         commandType: 'commit',
-        userId: usageTracker.getUserId(),
+        userId: await usageTracker.getUserId(),
         success,
         metadata
       })

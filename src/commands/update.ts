@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { UpdateChecker } from '../core/updateChecker.js';
 import { getVersion } from '../utils/version.js';
+import { usageTracker } from '../core/usage-tracker.js';
 
 /**
  * Update command class following TypeScript guidelines
@@ -20,6 +21,10 @@ export class UpdateCommand {
    * Execute the update command
    */
   public async execute(options: { checkOnly?: boolean }): Promise<void> {
+    const startTime = Date.now()
+    let success = false
+    let metadata: any = {}
+
     try {
       console.log(chalk.blue('🔍 Checking for DevSum updates...'));
 
@@ -36,9 +41,27 @@ export class UpdateCommand {
         console.log();
         console.log(chalk.yellow('💡 Run the update command above to get the latest features!'));
       }
+      
+      success = true
     } catch (error) {
       this.displayUpdateError(error);
+      success = false
       process.exit(1);
+    } finally {
+      // Track usage
+      const duration = Date.now() - startTime
+      metadata = {
+        duration,
+        command: 'update',
+        checkOnly: options.checkOnly || false
+      }
+
+      await usageTracker.trackUsage({
+        commandType: 'commit', // Use commit as the closest match for update
+        userId: await usageTracker.getUserId(),
+        success,
+        metadata
+      })
     }
   }
 

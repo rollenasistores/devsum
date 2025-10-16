@@ -46,7 +46,7 @@ export function GettingStarted() {
           <div className="space-y-4">
             <div>
               <h3 className="text-lg font-semibold mb-2">1. Install DevSum CLI</h3>
-              <CodeBlock language="bash" code="npm install -g devsum-cli" />
+              <CodeBlock language="bash" code="npm install -g @rollenasistores/devsum" />
             </div>
 
             <div>

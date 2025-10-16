@@ -19,19 +19,19 @@ export function Installation() {
             <TabsTrigger value="pnpm">pnpm</TabsTrigger>
           </TabsList>
           <TabsContent value="npm" className="space-y-4">
-            <CodeBlock language="bash" code="npm install -g devsum-cli" />
+            <CodeBlock language="bash" code="npm install -g @rollenasistores/devsum" />
             <p className="text-sm text-muted-foreground">
               Install globally to use the <code>devsum</code> command from anywhere.
             </p>
           </TabsContent>
           <TabsContent value="yarn" className="space-y-4">
-            <CodeBlock language="bash" code="yarn global add devsum-cli" />
+            <CodeBlock language="bash" code="yarn global add @rollenasistores/devsum" />
             <p className="text-sm text-muted-foreground">
               Install globally with Yarn to access the CLI from any directory.
             </p>
           </TabsContent>
           <TabsContent value="pnpm" className="space-y-4">
-            <CodeBlock language="bash" code="pnpm add -g devsum-cli" />
+            <CodeBlock language="bash" code="pnpm add -g @rollenasistores/devsum" />
             <p className="text-sm text-muted-foreground">
               Use pnpm for faster installation and better disk space efficiency.
             </p>

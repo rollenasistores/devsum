@@ -19,13 +19,13 @@ export function InstallationSection() {
               <TabsTrigger value="pnpm">pnpm</TabsTrigger>
             </TabsList>
             <TabsContent value="npm" className="mt-6">
-              <CodeBlock code="npm install -g devsum-cli" language="bash" />
+              <CodeBlock code="npm install -g @rollenasistores/devsum" language="bash" />
             </TabsContent>
             <TabsContent value="yarn" className="mt-6">
-              <CodeBlock code="yarn global add devsum-cli" language="bash" />
+              <CodeBlock code="yarn global add @rollenasistores/devsum" language="bash" />
             </TabsContent>
             <TabsContent value="pnpm" className="mt-6">
-              <CodeBlock code="pnpm add -g devsum-cli" language="bash" />
+              <CodeBlock code="pnpm add -g @rollenasistores/devsum" language="bash" />
             </TabsContent>
           </Tabs>
 

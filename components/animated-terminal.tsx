@@ -10,12 +10,12 @@ interface TerminalLine {
 }
 
 const terminalSequence: TerminalLine[] = [
-  // ASCII Art Logo
-  { text: "  ██████╗  ██████╗ ███╗   ███╗███╗   ███╗██╗████████╗", delay: 0, className: "text-primary font-bold" },
+  // ASCII Art Logo - COMMIT
+  { text: "  ██████╗ ██████╗ ███╗   ███╗███╗   ███╗██╗████████╗", delay: 0, className: "text-primary font-bold" },
   { text: " ██╔═══██╗██╔═══██╗████╗ ████║████╗ ████║██║╚══██╔══╝", delay: 50, className: "text-primary font-bold" },
-  { text: " ██║      ██║   ██║██╔████╔██║██╔████╔██║██║   ██║   ", delay: 50, className: "text-primary font-bold" },
-  { text: " ██║      ██║   ██║██║╚██╔╝██║██║╚██╔╝██║██║   ██║   ", delay: 50, className: "text-primary font-bold" },
-  { text: " ╚██████╗ ╚██████╔╝██║ ╚═╝ ██║██║ ╚═╝ ██║██║   ██║   ", delay: 50, className: "text-primary font-bold" },
+  { text: " ██║   ██║██║   ██║██╔████╔██║██╔████╔██║██║   ██║   ", delay: 50, className: "text-primary font-bold" },
+  { text: " ██║   ██║██║   ██║██║╚██╔╝██║██║╚██╔╝██║██║   ██║   ", delay: 50, className: "text-primary font-bold" },
+  { text: " ╚██████╔╝╚██████╔╝██║ ╚═╝ ██║██║ ╚═╝ ██║██║   ██║   ", delay: 50, className: "text-primary font-bold" },
   { text: "  ╚═════╝  ╚═════╝ ╚═╝     ╚═╝╚═╝     ╚═╝╚═╝   ╚═╝   ", delay: 50, className: "text-primary font-bold" },
   { text: "", delay: 100 },
   { text: "          AI-Powered Commit Message Generator", delay: 200, className: "text-center text-muted-foreground" },

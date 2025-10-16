@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { CommitProcessor } from '../core/commit-processor.js';
 import { CommitOptions } from '../types/index.js';
+import { usageTracker } from '../core/usage-tracker.js';
 
 /**
  * Commit command class following TypeScript guidelines
@@ -36,15 +37,42 @@ export class CommitCommand {
       noAuto?: boolean;
     }
   ): Promise<void> {
-    // Enable auto mode by default unless --no-auto is specified
-    const autoOptions = {
-      ...options,
-      auto: options.noAuto ? false : options.auto !== false, // Default to true unless --no-auto or explicitly false
-      length: options.auto ? 'detailed' : options.length || 'medium', // Auto mode uses detailed, others use medium
-      conventional: options.conventional !== false, // Default to conventional format
-    };
+    const startTime = Date.now()
+    let success = false
+    let metadata: any = {}
 
-    await this.processor.processCommit(autoOptions);
+    try {
+      // Enable auto mode by default unless --no-auto is specified
+      const autoOptions = {
+        ...options,
+        auto: options.noAuto ? false : options.auto !== false, // Default to true unless --no-auto or explicitly false
+        length: options.auto ? 'detailed' : options.length || 'medium', // Auto mode uses detailed, others use medium
+        conventional: options.conventional !== false, // Default to conventional format
+      };
+
+      await this.processor.processCommit(autoOptions);
+      success = true
+    } catch (error) {
+      success = false
+      throw error
+    } finally {
+      // Track usage
+      const duration = Date.now() - startTime
+      metadata = {
+        duration,
+        provider: options.provider,
+        dryRun: options.dryRun,
+        auto: options.auto,
+        conventional: options.conventional
+      }
+
+      await usageTracker.trackUsage({
+        commandType: 'commit',
+        userId: usageTracker.getUserId(),
+        success,
+        metadata
+      })
+    }
   }
 }
 

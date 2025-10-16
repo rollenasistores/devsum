@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { ReportProcessor } from '../core/report-processor.js';
 import { ReportOptions } from '../types/index.js';
+import { usageTracker } from '../core/usage-tracker.js';
 
 /**
  * Report command class following TypeScript guidelines
@@ -30,7 +31,35 @@ export class ReportCommand {
       listModels?: boolean;
     }
   ): Promise<void> {
-    await this.processor.processReport(options);
+    const startTime = Date.now()
+    let success = false
+    let metadata: any = {}
+
+    try {
+      await this.processor.processReport(options);
+      success = true
+    } catch (error) {
+      success = false
+      throw error
+    } finally {
+      // Track usage
+      const duration = Date.now() - startTime
+      metadata = {
+        duration,
+        provider: options.provider,
+        format: options.format,
+        length: options.length,
+        since: options.since,
+        until: options.until
+      }
+
+      await usageTracker.trackUsage({
+        commandType: 'report',
+        userId: usageTracker.getUserId(),
+        success,
+        metadata
+      })
+    }
   }
 }
 

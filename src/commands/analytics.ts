@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { AnalyticsProcessor } from '../core/analytics-processor.js';
 import { AnalyticsOptions } from '../types/index.js';
+import { usageTracker } from '../core/usage-tracker.js';
 
 /**
  * Analytics command class following TypeScript guidelines
@@ -27,7 +28,36 @@ export class AnalyticsCommand {
       export?: string;
     }
   ): Promise<void> {
-    await this.processor.processAnalytics(options);
+    const startTime = Date.now()
+    let success = false
+    let metadata: any = {}
+
+    try {
+      await this.processor.processAnalytics(options);
+      success = true
+    } catch (error) {
+      success = false
+      throw error
+    } finally {
+      // Track usage
+      const duration = Date.now() - startTime
+      metadata = {
+        duration,
+        provider: options.provider,
+        format: options.format,
+        focus: options.focus,
+        compare: options.compare,
+        interactive: options.interactive,
+        export: options.export
+      }
+
+      await usageTracker.trackUsage({
+        commandType: 'analyze',
+        userId: usageTracker.getUserId(),
+        success,
+        metadata
+      })
+    }
   }
 }
 

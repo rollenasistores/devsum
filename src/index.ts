@@ -7,6 +7,7 @@ import { reportCommand } from './commands/report.js';
 import { updateCommand } from './commands/update.js';
 import { commitCommand } from './commands/commit.js';
 import { analyticsCommand } from './commands/analytics.js';
+import { telemetryCommand } from './commands/telemetry.js';
 import { UpdateChecker } from './core/updateChecker.js';
 import { getVersion } from './utils/version.js';
 
@@ -30,6 +31,7 @@ program.addCommand(reportCommand);
 program.addCommand(analyticsCommand);
 program.addCommand(updateCommand);
 program.addCommand(commitCommand);
+program.addCommand(telemetryCommand);
 
 // Custom help
 program.on('--help', () => {
@@ -41,6 +43,7 @@ program.on('--help', () => {
   console.log(chalk.gray('  $ devsum commit --auto            # Generate and commit with AI'));
   console.log(chalk.gray('  $ devsum update                   # Check for updates'));
   console.log(chalk.gray('  $ devsum login                    # View free mode info'));
+  console.log(chalk.gray('  $ devsum telemetry --status       # Manage usage tracking'));
   console.log('');
   console.log(chalk.blue('Documentation:'));
   console.log(chalk.gray('  https://github.com/rollenasistores/devsum#readme'));
@@ -69,6 +72,7 @@ program.on('command:*', operands => {
   console.log(chalk.gray('  commit    - Generate AI commit messages'));
   console.log(chalk.gray('  update    - Check for DevSum updates'));
   console.log(chalk.gray('  login     - View free mode information'));
+  console.log(chalk.gray('  telemetry - Manage usage tracking settings'));
   console.log(chalk.gray('  --help    - Show help information'));
   process.exit(1);
 });

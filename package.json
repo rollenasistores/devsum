@@ -94,7 +94,8 @@
     "marked": "^16.2.1",
     "openai": "^5.20.2",
     "puppeteer": "^24.19.0",
-    "simple-git": "^3.25.0"
+    "simple-git": "^3.25.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.7",

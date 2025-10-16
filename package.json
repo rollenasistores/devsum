@@ -1,6 +1,6 @@
 {
   "name": "@rollenasistores/devsum",
-  "version": "1.5.4",
+  "version": "1.6.0",
   "description": "🚀 AI-powered CLI tool that generates professional accomplishment reports from git commits. Transform your development work into compelling narratives for performance reviews, sprint summaries, and project updates.",
   "type": "module",
   "main": "dist/index.js",

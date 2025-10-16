@@ -1,6 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import Anthropic from '@anthropic-ai/sdk';
-import OpenAI from 'openai';
+import { LazyLoader } from './lazy-loader.js';
 import {
   GitCommit,
   AIResponse,
@@ -16,9 +14,7 @@ import {
  * Follows single responsibility principle and proper TypeScript practices
  */
 export class AIService {
-  private geminiClient?: GoogleGenerativeAI;
-  private claudeClient?: Anthropic;
-  private openaiClient?: OpenAI;
+  private client?: any;
   private readonly provider: AIProviderType;
   private readonly apiKey: string;
   private readonly model: string;
@@ -27,8 +23,6 @@ export class AIService {
     this.provider = provider;
     this.apiKey = apiKey;
     this.model = model;
-
-    this.initializeClients();
   }
 
   /**
@@ -40,21 +34,11 @@ export class AIService {
   }
 
   /**
-   * Initialize AI clients based on provider type
+   * Initialize AI client lazily
    */
-  private initializeClients(): void {
-    switch (this.provider) {
-      case 'gemini':
-        this.geminiClient = new GoogleGenerativeAI(this.apiKey);
-        break;
-      case 'claude':
-        this.claudeClient = new Anthropic({ apiKey: this.apiKey });
-        break;
-      case 'openai':
-        this.openaiClient = new OpenAI({ apiKey: this.apiKey });
-        break;
-      default:
-        throw new Error(`Unsupported AI provider: ${this.provider}`);
+  private async initializeClient(): Promise<void> {
+    if (!this.client) {
+      this.client = await LazyLoader.loadAIService(this.provider, this.apiKey, this.model);
     }
   }
 
@@ -65,6 +49,7 @@ export class AIService {
     commits: readonly GitCommit[],
     length: ReportLength = 'detailed'
   ): Promise<AIResponse> {
+    await this.initializeClient();
     const prompt = this.buildReportPrompt(commits, length);
 
     try {
@@ -81,6 +66,7 @@ export class AIService {
     changes: StagedChanges,
     options: CommitMessageOptions
   ): Promise<string> {
+    await this.initializeClient();
     const prompt = this.buildCommitPrompt(changes, options);
 
     try {
@@ -94,6 +80,7 @@ export class AIService {
    * Generate branch name from staged changes
    */
   public async generateBranchName(changes: StagedChanges): Promise<string> {
+    await this.initializeClient();
     const prompt = this.buildBranchNamePrompt(changes);
 
     try {
@@ -104,9 +91,46 @@ export class AIService {
   }
 
   /**
+   * Generate alternative branch name when there's a conflict
+   */
+  public async generateAlternativeBranchName(
+    changes: StagedChanges,
+    existingBranches: string[],
+    originalName: string
+  ): Promise<string> {
+    await this.initializeClient();
+    const prompt = this.buildAlternativeBranchNamePrompt(changes, existingBranches, originalName);
+
+    try {
+      return await this.executeBranchNameGeneration(prompt);
+    } catch (error) {
+      throw this.handleGenerationError(error);
+    }
+  }
+
+  /**
+   * Generate commit message with detailed diff analysis
+   */
+  public async generateDetailedCommitMessage(
+    changes: StagedChanges,
+    diffContent: string,
+    options: CommitMessageOptions
+  ): Promise<string> {
+    await this.initializeClient();
+    const prompt = this.buildDetailedCommitPrompt(changes, diffContent, options);
+
+    try {
+      return await this.executeCommitGeneration(prompt);
+    } catch (error) {
+      throw this.handleGenerationError(error);
+    }
+  }
+
+  /**
    * Generate pull request title from staged changes
    */
   public async generatePullRequestTitle(changes: StagedChanges): Promise<string> {
+    await this.initializeClient();
     const prompt = this.buildPullRequestTitlePrompt(changes);
 
     try {
@@ -191,11 +215,11 @@ export class AIService {
   }
 
   private async generateWithGemini(prompt: string): Promise<AIResponse> {
-    if (!this.geminiClient) {
+    if (!this.client) {
       throw new Error('Gemini client not initialized');
     }
 
-    const model = this.geminiClient.getGenerativeModel({
+    const model = this.client.getGenerativeModel({
       model: this.model || 'gemini-2.0-flash',
     });
 
@@ -207,11 +231,11 @@ export class AIService {
   }
 
   private async generateWithClaude(prompt: string): Promise<AIResponse> {
-    if (!this.claudeClient) {
+    if (!this.client) {
       throw new Error('Claude client not initialized');
     }
 
-    const response = await this.claudeClient.messages.create({
+    const response = await this.client.messages.create({
       model: this.model || 'claude-3-5-sonnet-20241022',
       max_tokens: 4000,
       temperature: 0.7,
@@ -225,19 +249,19 @@ export class AIService {
 
     // Extract text from Claude's response
     const text = response.content
-      .filter(block => block.type === 'text')
-      .map(block => (block as any).text)
+      .filter((block: any) => block.type === 'text')
+      .map((block: any) => block.text)
       .join('\n');
 
     return this.parseResponse(text);
   }
 
   private async generateWithOpenAI(prompt: string): Promise<AIResponse> {
-    if (!this.openaiClient) {
+    if (!this.client) {
       throw new Error('OpenAI client not initialized');
     }
 
-    const response = await this.openaiClient.chat.completions.create({
+    const response = await this.client.chat.completions.create({
       model: this.model || 'gpt-4',
       max_tokens: 4000,
       temperature: 0.7,
@@ -467,6 +491,7 @@ Focus on the impact and value of the changes rather than just listing commits. G
    * Fetch available Gemini models
    */
   private static async fetchGeminiModels(apiKey: string): Promise<readonly string[]> {
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const client = new GoogleGenerativeAI(apiKey);
 
     try {
@@ -489,7 +514,7 @@ Focus on the impact and value of the changes rather than just listing commits. G
    * Test model availability for Gemini
    */
   private static async testModelsAvailability(
-    client: GoogleGenerativeAI,
+    client: any,
     models: readonly string[]
   ): Promise<readonly string[]> {
     const availableModels: string[] = [];
@@ -512,7 +537,8 @@ Focus on the impact and value of the changes rather than just listing commits. G
    * Fetch available Claude models
    */
   private static async fetchClaudeModels(apiKey: string): Promise<readonly string[]> {
-    const client = new Anthropic({ apiKey });
+    const Anthropic = await import('@anthropic-ai/sdk');
+    const client = new Anthropic.default({ apiKey });
 
     try {
       const knownModels = [
@@ -534,7 +560,7 @@ Focus on the impact and value of the changes rather than just listing commits. G
    * Test Claude model availability
    */
   private static async testClaudeModelsAvailability(
-    client: Anthropic,
+    client: any,
     models: readonly string[]
   ): Promise<readonly string[]> {
     const availableModels: string[] = [];
@@ -560,7 +586,8 @@ Focus on the impact and value of the changes rather than just listing commits. G
    * Fetch available OpenAI models
    */
   private static async fetchOpenAIModels(apiKey: string): Promise<readonly string[]> {
-    const client = new OpenAI({ apiKey });
+    const OpenAI = await import('openai');
+    const client = new OpenAI.default({ apiKey });
 
     try {
       const response = await client.models.list();
@@ -594,11 +621,11 @@ Focus on the impact and value of the changes rather than just listing commits. G
   }
 
   private async generateCommitWithGemini(prompt: string): Promise<string> {
-    if (!this.geminiClient) {
+    if (!this.client) {
       throw new Error('Gemini client not initialized');
     }
 
-    const model = this.geminiClient.getGenerativeModel({
+    const model = this.client.getGenerativeModel({
       model: this.model || 'gemini-2.0-flash',
     });
 
@@ -610,11 +637,11 @@ Focus on the impact and value of the changes rather than just listing commits. G
   }
 
   private async generateCommitWithClaude(prompt: string): Promise<string> {
-    if (!this.claudeClient) {
+    if (!this.client) {
       throw new Error('Claude client not initialized');
     }
 
-    const response = await this.claudeClient.messages.create({
+    const response = await this.client.messages.create({
       model: this.model || 'claude-3-5-sonnet-20241022',
       max_tokens: 200,
       temperature: 0.7,
@@ -628,19 +655,19 @@ Focus on the impact and value of the changes rather than just listing commits. G
 
     // Extract text from Claude's response
     const text = response.content
-      .filter(block => block.type === 'text')
-      .map(block => (block as any).text)
+      .filter((block: any) => block.type === 'text')
+      .map((block: any) => block.text)
       .join('\n');
 
     return this.parseCommitResponse(text);
   }
 
   private async generateCommitWithOpenAI(prompt: string): Promise<string> {
-    if (!this.openaiClient) {
+    if (!this.client) {
       throw new Error('OpenAI client not initialized');
     }
 
-    const response = await this.openaiClient.chat.completions.create({
+    const response = await this.client.chat.completions.create({
       model: this.model || 'gpt-4',
       max_tokens: 200,
       temperature: 0.7,
@@ -659,7 +686,7 @@ Focus on the impact and value of the changes rather than just listing commits. G
   private buildCommitPrompt(changes: StagedChanges, options: CommitMessageOptions): string {
     const { conventional, emoji, length } = options;
 
-    // Build file summary
+    // Build detailed file summary with change analysis
     const fileSummary = changes.stagedFiles
       .map(file => {
         const isAdded = changes.addedFiles.includes(file);
@@ -674,13 +701,18 @@ Focus on the impact and value of the changes rather than just listing commits. G
       })
       .join('\n');
 
-    // Build change summary
+    // Build comprehensive change summary
     const changeSummary = `Files changed: ${changes.stagedFiles.length}
 Insertions: +${changes.diffStats.insertions}
 Deletions: -${changes.diffStats.deletions}
 
 Files:
-${fileSummary}`;
+${fileSummary}
+
+Change Analysis:
+- Added files: ${changes.addedFiles.length} (${changes.addedFiles.join(', ') || 'none'})
+- Modified files: ${changes.modifiedFiles.length} (${changes.modifiedFiles.join(', ') || 'none'})
+- Deleted files: ${changes.deletedFiles.length} (${changes.deletedFiles.join(', ') || 'none'})`;
 
     // Build format instructions
     let formatInstructions = '';
@@ -705,23 +737,24 @@ Use appropriate emojis:
 🔧 chore: maintenance`;
     }
 
-    // Build length instructions
+    // Build length instructions with emphasis on detailed analysis
     let lengthInstructions = '';
     switch (length) {
       case 'short':
-        lengthInstructions = 'Generate a SHORT commit message as a bulleted list (2-3 bullet points, each under 50 characters)';
+        lengthInstructions =
+          'Generate a SHORT commit message as a bulleted list (2-3 bullet points, each 50-80 characters). Focus on the most significant changes only with descriptive sentences.';
         break;
       case 'medium':
         lengthInstructions =
-          'Generate a MEDIUM commit message as a bulleted list (3-5 bullet points, each under 60 characters)';
+          'Generate a MEDIUM commit message as a bulleted list (3-5 bullet points, each 60-100 characters). Include key changes and improvements with detailed descriptions.';
         break;
       case 'detailed':
         lengthInstructions =
-          'Generate a DETAILED commit message as a bulleted list (4-7 bullet points, each under 70 characters)';
+          'Generate a DETAILED commit message as a bulleted list (4-7 bullet points, each 80-120 characters). Provide comprehensive analysis of ALL changes made with long, descriptive sentences that explain what was changed, why it was changed, and the impact of the changes.';
         break;
     }
 
-    return `Generate a commit message for the following changes:
+    return `Generate a comprehensive commit message for the following changes:
 
 ${changeSummary}
 
@@ -729,19 +762,154 @@ Requirements:
 ${lengthInstructions}
 ${formatInstructions}
 
+IMPORTANT: Analyze ALL the changes thoroughly and create detailed bullet points that capture:
+- Every significant change made to the codebase
+- New functionality that was added
+- Bugs that were fixed
+- Code refactoring or improvements
+- Configuration or documentation updates
+- Any architectural changes or optimizations
+
 Format the commit message as a bulleted list where each bullet point describes a specific change:
 - Use present tense ("Fix bug" not "Fixed bug")
 - Start each bullet with a verb (Fix, Add, Update, Remove, Refactor, etc.)
-- Be specific about what was changed
-- Each bullet should be concise but descriptive
-- Focus on the main changes made
+- Be specific about what was changed and why
+- Each bullet should be a long, descriptive sentence (80-120 characters)
+- Cover ALL significant changes, not just the main ones
+- Include technical details about the implementation and impact
 
-Examples of good bulleted commit messages:
-- Fix authentication validation bug
-- Add user profile editing functionality  
-- Update README with installation instructions
-- Remove deprecated API endpoints
-- Refactor database connection handling
+Examples of good detailed bulleted commit messages:
+- Fix authentication validation bug in login form that was causing users to be incorrectly rejected during login attempts
+- Add user profile editing functionality with comprehensive validation to ensure data integrity and prevent unauthorized modifications
+- Update README with detailed installation and configuration instructions to help new developers get started quickly
+- Remove deprecated API endpoints and update client code to use the new RESTful endpoints for improved performance
+- Refactor database connection handling to implement better error management and connection pooling for improved reliability
+- Optimize query performance in user search functionality by adding proper database indexes and query optimization
+- Add comprehensive error handling for file upload operations to prevent crashes and provide better user feedback
+
+Generate only the commit message as a bulleted list, no additional text:`;
+  }
+
+  /**
+   * Build detailed commit prompt with diff content
+   */
+  private buildDetailedCommitPrompt(
+    changes: StagedChanges,
+    diffContent: string,
+    options: CommitMessageOptions
+  ): string {
+    const { conventional, emoji, length } = options;
+
+    // Build detailed file summary with change analysis
+    const fileSummary = changes.stagedFiles
+      .map(file => {
+        const isAdded = changes.addedFiles.includes(file);
+        const isDeleted = changes.deletedFiles.includes(file);
+        const isModified = changes.modifiedFiles.includes(file);
+
+        let status = 'modified';
+        if (isAdded) status = 'added';
+        else if (isDeleted) status = 'deleted';
+
+        return `- ${file} (${status})`;
+      })
+      .join('\n');
+
+    // Build comprehensive change summary
+    const changeSummary = `Files changed: ${changes.stagedFiles.length}
+Insertions: +${changes.diffStats.insertions}
+Deletions: -${changes.diffStats.deletions}
+
+Files:
+${fileSummary}
+
+Change Analysis:
+- Added files: ${changes.addedFiles.length} (${changes.addedFiles.join(', ') || 'none'})
+- Modified files: ${changes.modifiedFiles.length} (${changes.modifiedFiles.join(', ') || 'none'})
+- Deleted files: ${changes.deletedFiles.length} (${changes.deletedFiles.join(', ') || 'none'})`;
+
+    // Build format instructions
+    let formatInstructions = '';
+    if (conventional) {
+      formatInstructions = `
+Use conventional commit format: <type>(<scope>): <description>
+Types: feat, fix, docs, style, refactor, test, chore
+Examples: feat(auth): add login validation
+         fix(api): resolve timeout issue
+         docs: update README`;
+    }
+
+    if (emoji) {
+      formatInstructions += `
+Use appropriate emojis:
+✨ feat: new features
+🐛 fix: bug fixes
+📚 docs: documentation
+🎨 style: formatting
+♻️ refactor: code changes
+✅ test: testing
+🔧 chore: maintenance`;
+    }
+
+    // Build length instructions with emphasis on detailed analysis
+    let lengthInstructions = '';
+    switch (length) {
+      case 'short':
+        lengthInstructions =
+          'Generate a SHORT commit message as a bulleted list (2-3 bullet points, each 50-80 characters). Focus on the most significant changes only with descriptive sentences.';
+        break;
+      case 'medium':
+        lengthInstructions =
+          'Generate a MEDIUM commit message as a bulleted list (3-5 bullet points, each 60-100 characters). Include key changes and improvements with detailed descriptions.';
+        break;
+      case 'detailed':
+        lengthInstructions =
+          'Generate a DETAILED commit message as a bulleted list (4-7 bullet points, each 80-120 characters). Provide comprehensive analysis of ALL changes made with long, descriptive sentences that explain what was changed, why it was changed, and the impact of the changes.';
+        break;
+    }
+
+    // Truncate diff content if it's too long (keep first 2000 characters)
+    const truncatedDiff =
+      diffContent.length > 2000
+        ? diffContent.substring(0, 2000) + '\n... (diff truncated for brevity)'
+        : diffContent;
+
+    return `Generate a comprehensive commit message for the following changes:
+
+${changeSummary}
+
+Detailed Code Changes:
+${truncatedDiff}
+
+Requirements:
+${lengthInstructions}
+${formatInstructions}
+
+IMPORTANT: Analyze the actual code changes in the diff above and create detailed bullet points that capture:
+- Every significant change made to the codebase based on the actual diff
+- New functionality that was added (analyze the + lines)
+- Bugs that were fixed (analyze the - and + lines)
+- Code refactoring or improvements (analyze the changes)
+- Configuration or documentation updates
+- Any architectural changes or optimizations
+- Specific methods, functions, or classes that were modified
+
+Format the commit message as a bulleted list where each bullet point describes a specific change:
+- Use present tense ("Fix bug" not "Fixed bug")
+- Start each bullet with a verb (Fix, Add, Update, Remove, Refactor, etc.)
+- Be specific about what was changed and why based on the actual diff
+- Each bullet should be a long, descriptive sentence (80-120 characters)
+- Cover ALL significant changes visible in the diff
+- Include technical details about the implementation and impact
+
+Examples of good detailed bulleted commit messages:
+- Fix authentication validation bug in login form that was causing users to be incorrectly rejected during login attempts
+- Add user profile editing functionality with comprehensive validation to ensure data integrity and prevent unauthorized modifications
+- Update README with detailed installation and configuration instructions to help new developers get started quickly
+- Remove deprecated API endpoints and update client code to use the new RESTful endpoints for improved performance
+- Refactor database connection handling to implement better error management and connection pooling for improved reliability
+- Optimize query performance in user search functionality by adding proper database indexes and query optimization
+- Add comprehensive error handling for file upload operations to prevent crashes and provide better user feedback
 
 Generate only the commit message as a bulleted list, no additional text:`;
   }
@@ -759,8 +927,8 @@ Generate only the commit message as a bulleted list, no additional text:`;
     );
 
     // Filter for bulleted lines (starting with - or *)
-    const bulletLines = cleanedLines.filter(line => 
-      line.startsWith('-') || line.startsWith('*') || line.startsWith('•')
+    const bulletLines = cleanedLines.filter(
+      line => line.startsWith('-') || line.startsWith('*') || line.startsWith('•')
     );
 
     // If we have bulleted lines, use them; otherwise fall back to all lines
@@ -786,11 +954,11 @@ Generate only the commit message as a bulleted list, no additional text:`;
   }
 
   private async generateBranchNameWithGemini(prompt: string): Promise<string> {
-    if (!this.geminiClient) {
+    if (!this.client) {
       throw new Error('Gemini client not initialized');
     }
 
-    const model = this.geminiClient.getGenerativeModel({
+    const model = this.client.getGenerativeModel({
       model: this.model || 'gemini-2.0-flash',
     });
 
@@ -802,11 +970,11 @@ Generate only the commit message as a bulleted list, no additional text:`;
   }
 
   private async generateBranchNameWithClaude(prompt: string): Promise<string> {
-    if (!this.claudeClient) {
+    if (!this.client) {
       throw new Error('Claude client not initialized');
     }
 
-    const response = await this.claudeClient.messages.create({
+    const response = await this.client.messages.create({
       model: this.model || 'claude-3-5-sonnet-20241022',
       max_tokens: 50,
       temperature: 0.7,
@@ -820,19 +988,19 @@ Generate only the commit message as a bulleted list, no additional text:`;
 
     // Extract text from Claude's response
     const text = response.content
-      .filter(block => block.type === 'text')
-      .map(block => (block as any).text)
+      .filter((block: any) => block.type === 'text')
+      .map((block: any) => block.text)
       .join('\n');
 
     return this.parseBranchNameResponse(text);
   }
 
   private async generateBranchNameWithOpenAI(prompt: string): Promise<string> {
-    if (!this.openaiClient) {
+    if (!this.client) {
       throw new Error('OpenAI client not initialized');
     }
 
-    const response = await this.openaiClient.chat.completions.create({
+    const response = await this.client.chat.completions.create({
       model: this.model || 'gpt-4',
       max_tokens: 50,
       temperature: 0.7,
@@ -882,6 +1050,61 @@ Requirements:
 - Description should be 2-4 words, kebab-case
 - Be descriptive but concise
 - Focus on the main purpose of the changes
+- Examples: feature/user-authentication, fix/login-bug, refactor/api-endpoints
+
+Generate only the branch name, no additional text:`;
+  }
+
+  /**
+   * Build alternative branch name prompt when there's a conflict
+   */
+  private buildAlternativeBranchNamePrompt(
+    changes: StagedChanges,
+    existingBranches: string[],
+    originalName: string
+  ): string {
+    // Build file summary
+    const fileSummary = changes.stagedFiles
+      .map(file => {
+        const isAdded = changes.addedFiles.includes(file);
+        const isDeleted = changes.deletedFiles.includes(file);
+        const isModified = changes.modifiedFiles.includes(file);
+
+        let status = 'modified';
+        if (isAdded) status = 'added';
+        else if (isDeleted) status = 'deleted';
+
+        return `- ${file} (${status})`;
+      })
+      .join('\n');
+
+    // Build change summary
+    const changeSummary = `Files changed: ${changes.stagedFiles.length}
+Insertions: +${changes.diffStats.insertions}
+Deletions: -${changes.diffStats.deletions}
+
+Files:
+${fileSummary}`;
+
+    // Build existing branches list
+    const existingBranchesList = existingBranches.length > 0 ? existingBranches.join(', ') : 'none';
+
+    return `Generate a DIFFERENT git branch name for the following changes:
+
+${changeSummary}
+
+IMPORTANT: The branch name "${originalName}" already exists in this repository.
+
+Existing branches: ${existingBranchesList}
+
+Requirements:
+- Use conventional branch naming: type/description
+- Common types: feature, fix, hotfix, chore, docs, refactor, test
+- Description should be 2-4 words, kebab-case
+- Be descriptive but concise
+- Focus on the main purpose of the changes
+- Generate a COMPLETELY DIFFERENT name from "${originalName}"
+- Avoid using similar words or patterns from existing branches
 - Examples: feature/user-authentication, fix/login-bug, refactor/api-endpoints
 
 Generate only the branch name, no additional text:`;
@@ -969,11 +1192,11 @@ Generate only the pull request title, no additional text:`;
   }
 
   private async generatePullRequestTitleWithGemini(prompt: string): Promise<string> {
-    if (!this.geminiClient) {
+    if (!this.client) {
       throw new Error('Gemini client not initialized');
     }
 
-    const model = this.geminiClient.getGenerativeModel({
+    const model = this.client.getGenerativeModel({
       model: this.model || 'gemini-2.0-flash',
     });
 
@@ -985,11 +1208,11 @@ Generate only the pull request title, no additional text:`;
   }
 
   private async generatePullRequestTitleWithClaude(prompt: string): Promise<string> {
-    if (!this.claudeClient) {
+    if (!this.client) {
       throw new Error('Claude client not initialized');
     }
 
-    const response = await this.claudeClient.messages.create({
+    const response = await this.client.messages.create({
       model: this.model || 'claude-3-5-sonnet-20241022',
       max_tokens: 50,
       temperature: 0.7,
@@ -1003,19 +1226,19 @@ Generate only the pull request title, no additional text:`;
 
     // Extract text from Claude's response
     const text = response.content
-      .filter(block => block.type === 'text')
-      .map(block => (block as any).text)
+      .filter((block: any) => block.type === 'text')
+      .map((block: any) => block.text)
       .join('\n');
 
     return this.parsePullRequestTitleResponse(text);
   }
 
   private async generatePullRequestTitleWithOpenAI(prompt: string): Promise<string> {
-    if (!this.openaiClient) {
+    if (!this.client) {
       throw new Error('OpenAI client not initialized');
     }
 
-    const response = await this.openaiClient.chat.completions.create({
+    const response = await this.client.chat.completions.create({
       model: this.model || 'gpt-4',
       max_tokens: 50,
       temperature: 0.7,

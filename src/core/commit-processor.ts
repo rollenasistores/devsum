@@ -155,14 +155,20 @@ export class CommitProcessor {
       DisplayService.displayProgress(`Found ${changes.stagedFiles.length} staged files`, true);
       DisplayService.displayChanges(changes);
 
-      // Generate AI commit message
+      // Generate AI commit message with detailed diff analysis
       DisplayService.displayAIProgress(
         selectedProvider.provider,
         selectedProvider.model || 'default'
       );
       const aiService = AIService.fromProvider(selectedProvider);
       const messageLength = (options.length as 'short' | 'medium' | 'detailed') || 'medium';
-      const commitMessage = await aiService.generateCommitMessage(changes, {
+
+      // Get detailed diff content for better analysis
+      DisplayService.displayProgress('Analyzing code changes...');
+      const diffContent = await this.gitService.getStagedDiff();
+
+      // Generate commit message with detailed diff analysis
+      const commitMessage = await aiService.generateDetailedCommitMessage(changes, diffContent, {
         conventional: options.conventional || false,
         emoji: options.emoji || false,
         length: messageLength,
@@ -282,10 +288,42 @@ export class CommitProcessor {
     console.log();
 
     try {
-      // Step 1: Generate and create branch
+      // Step 1: Generate and create branch with AI conflict resolution
       DisplayService.displayProgress('🤖 Generating branch name...');
-      const generatedBranchName = await aiService.generateBranchName(changes);
+      let generatedBranchName = await aiService.generateBranchName(changes);
       DisplayService.displayProgress(`Generated branch: ${generatedBranchName}`, true);
+
+      // Check for conflicts and regenerate if needed
+      let attempts = 0;
+      const maxAttempts = 3;
+      while (
+        (await this.branchManager.hasBranchConflict(generatedBranchName)) &&
+        attempts < maxAttempts
+      ) {
+        attempts++;
+        console.log(
+          chalk.yellow(
+            `⚠️  Branch "${generatedBranchName}" already exists, generating alternative...`
+          )
+        );
+
+        const existingBranches = await this.branchManager.getAllBranchNames();
+        generatedBranchName = await aiService.generateAlternativeBranchName(
+          changes,
+          existingBranches,
+          generatedBranchName
+        );
+        DisplayService.displayProgress(
+          `Generated alternative branch: ${generatedBranchName}`,
+          true
+        );
+      }
+
+      if (attempts >= maxAttempts) {
+        console.log(chalk.red('❌ Unable to generate unique branch name after multiple attempts'));
+        console.log(chalk.blue('💡 Please create the branch manually or choose a different name'));
+        return;
+      }
 
       // Ask for branch confirmation
       const shouldCreateBranch = await this.askConfirmation(
@@ -311,11 +349,21 @@ export class CommitProcessor {
 
       DisplayService.displayProgress('🤖 Generating commit message...');
       const messageLength = (options.length as 'short' | 'medium' | 'detailed') || 'detailed';
-      const commitMessage = await aiService.generateCommitMessage(updatedChanges, {
-        conventional: options.conventional || false,
-        emoji: options.emoji || false,
-        length: messageLength,
-      });
+
+      // Get detailed diff content for better analysis
+      DisplayService.displayProgress('Analyzing code changes...');
+      const diffContent = await this.gitService.getStagedDiff();
+
+      // Generate commit message with detailed diff analysis
+      const commitMessage = await aiService.generateDetailedCommitMessage(
+        updatedChanges,
+        diffContent,
+        {
+          conventional: options.conventional || false,
+          emoji: options.emoji || false,
+          length: messageLength,
+        }
+      );
       DisplayService.displayProgress('Commit message generated', true);
 
       // Display the generated message
@@ -469,7 +517,36 @@ export class CommitProcessor {
     aiService: AIService,
     changes: StagedChanges
   ): Promise<string> {
-    const generatedBranchName = await aiService.generateBranchName(changes);
+    let generatedBranchName = await aiService.generateBranchName(changes);
+
+    // Check for conflicts and regenerate if needed
+    let attempts = 0;
+    const maxAttempts = 3;
+    while (
+      (await this.branchManager.hasBranchConflict(generatedBranchName)) &&
+      attempts < maxAttempts
+    ) {
+      attempts++;
+      console.log(
+        chalk.yellow(
+          `⚠️  Branch "${generatedBranchName}" already exists, generating alternative...`
+        )
+      );
+
+      const existingBranches = await this.branchManager.getAllBranchNames();
+      generatedBranchName = await aiService.generateAlternativeBranchName(
+        changes,
+        existingBranches,
+        generatedBranchName
+      );
+      DisplayService.displayProgress(`Generated alternative branch: ${generatedBranchName}`, true);
+    }
+
+    if (attempts >= maxAttempts) {
+      console.log(chalk.red('❌ Unable to generate unique branch name after multiple attempts'));
+      console.log(chalk.blue('💡 Please create the branch manually or choose a different name'));
+      process.exit(1);
+    }
 
     // Create the branch
     DisplayService.displayProgress(`Creating branch: ${generatedBranchName}...`);

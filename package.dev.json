@@ -1,27 +1,14 @@
 {
-  "name": "@rollenasistores/devsum",
+  "name": "@rollenasistores/devsum-dev",
   "version": "1.5.4",
-  "description": "🚀 AI-powered CLI tool that generates professional accomplishment reports from git commits. Transform your development work into compelling narratives for performance reviews, sprint summaries, and project updates.",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "bin": {
-    "devsum": "./dist/bin/devsum.js"
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE",
-    "CHANGELOG.md",
-    "Dockerfile",
-    "docker-compose.yml",
-    ".dockerignore"
-  ],
+  "description": "Development tools and performance testing for DevSum CLI",
+  "private": true,
   "scripts": {
     "preinstall": "node scripts/check-requirements.js",
     "postinstall": "node scripts/setup.js",
     "build": "npm run clean && tsc && npm run build:copy-assets",
     "build:copy-assets": "cp -r bin dist/ && chmod +x dist/bin/devsum.js",
+    "build:analyze": "npm run build && npx webpack-bundle-analyzer dist/",
     "dev": "tsx bin/devsum.ts",
     "start": "node dist/bin/devsum.js",
     "clean": "rm -rf dist",
@@ -36,51 +23,39 @@
     "typecheck:watch": "tsc --noEmit --watch",
     "validate": "npm run typecheck && npm run lint && npm run format:check",
     "prepublishOnly": "npm run validate && npm run build",
-    "semantic-release": "semantic-release",
+    "postversion": "git push && git push --tags",
+    "release": "standard-version",
     "docs:dev": "vuepress dev docs",
     "docs:build": "vuepress build docs",
     "precommit": "npm run validate",
     "ci": "npm run validate && npm run test:coverage",
     "install:full": "npm install --save-optional @anthropic-ai/sdk @google/generative-ai openai puppeteer inquirer",
     "install:core": "npm install --no-optional",
+    "optimize": "node scripts/optimize-bundle.js",
+    "analyze": "npm run build && npm run optimize",
+    "benchmark": "node scripts/benchmark-installation.js",
+    "benchmark:all": "npm run benchmark",
+    "monitor": "node scripts/monitor-performance.js",
+    "monitor:all": "npm run monitor all",
+    "compare": "node scripts/compare-performance.js",
+    "check:regression": "node scripts/check-regression.js",
+    "perf:test": "npm run benchmark && npm run monitor && npm run compare",
+    "perf:ci": "npm run build && npm run perf:test",
     "dev-mode": "node scripts/dev-mode.js",
-    "commit": "node dist/scripts/commit.js"
+    "commit": "tsx scripts/commit.ts"
   },
   "keywords": [
     "cli",
     "git",
     "ai",
     "reports",
-    "typescript",
-    "accomplishment",
-    "performance-review",
-    "commit-analysis",
-    "developer-tools",
-    "gemini",
-    "claude",
-    "anthropic",
-    "google-ai",
-    "productivity",
-    "automation",
-    "markdown",
-    "sprint-report",
-    "project-management",
-    "code-review",
-    "development-summary"
+    "development",
+    "performance",
+    "testing",
+    "benchmark"
   ],
-  "author": {
-    "name": "Rollen Asistores",
-    "email": "asistoresrlc1@gmail.com",
-    "url": "https://github.com/rollenasistores"
-  },
-  "contributors": [
-    {
-      "name": "Rollen Asistores",
-      "email": "asistoresrlc1@gmail.com",
-      "url": "https://github.com/rollenasistores"
-    }
-  ],
-  "license": "Apache-2.0",
+  "author": "Rollen Asistores <asistoresrlc1@gmail.com>",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rollenasistores/devsum.git"
@@ -107,9 +82,6 @@
     "puppeteer": "^24.19.0"
   },
   "devDependencies": {
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/git": "^10.0.1",
-    "@semantic-release/npm": "^12.0.2",
     "@types/inquirer": "^9.0.7",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.12.7",
@@ -123,8 +95,8 @@
     "jest": "^29.7.0",
     "np": "^10.0.5",
     "prettier": "^3.2.5",
-    "semantic-release": "^24.2.9",
     "semver": "^7.6.0",
+    "standard-version": "^9.5.0",
     "ts-jest": "^29.1.2",
     "tsx": "^4.7.1",
     "typescript": "^5.4.5",
@@ -135,17 +107,6 @@
     "npm": ">=8.0.0"
   },
   "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  },
-  "preferGlobal": true,
-  "os": [
-    "darwin",
-    "linux",
-    "win32"
-  ],
-  "cpu": [
-    "x64",
-    "arm64"
-  ]
+    "access": "public"
+  }
 }

@@ -19,7 +19,10 @@ export class BranchManager {
     try {
       const branchExists = await this.gitService.branchExists(branchName);
       if (branchExists) {
-        throw new Error(`Branch '${branchName}' already exists`);
+        // If branch exists, try to switch to it instead of throwing error
+        console.log(`Branch '${branchName}' already exists, switching to it...`);
+        await this.gitService.switchBranch(branchName);
+        return;
       }
 
       await this.gitService.createAndSwitchBranch(branchName);
@@ -193,5 +196,24 @@ export class BranchManager {
    */
   public displayBranchCreationSuccess(branchName: string): void {
     console.log(chalk.green(`✅ Created and switched to branch: ${branchName}`));
+  }
+
+  /**
+   * Get all existing branch names for conflict checking
+   */
+  public async getAllBranchNames(): Promise<string[]> {
+    try {
+      const branches = await this.getAllBranches();
+      return [...branches.local, ...branches.remote];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  /**
+   * Check if a branch name conflicts with existing branches
+   */
+  public async hasBranchConflict(branchName: string): Promise<boolean> {
+    return await this.branchExists(branchName);
   }
 }

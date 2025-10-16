@@ -96,17 +96,71 @@ Perfect for:
 </tr>
 </table>
 
+## 📦 **What's Included**
+
+This package includes:
+
+- ✅ **Core CLI functionality** (report generation, commit assistance,
+  analytics)
+- ✅ **AI integration** (when optional dependencies are installed)
+- ✅ **Multiple output formats** (Markdown, JSON, HTML, TXT)
+- ✅ **Fast installation** (optimized for speed)
+- ✅ **Docker support** (containerized deployment)
+
+**Not included** (development tools):
+
+- ❌ Performance testing scripts
+- ❌ Benchmark tools
+- ❌ Development utilities
+- ❌ Source code
+
+> **For developers**: See the
+> [GitHub repository](https://github.com/rollenasistores/devsum) for development
+> tools and performance testing workflows.
+
 ## 🚀 Quick Start
 
 ### 📦 Installation
 
+#### 🚀 **Fast Installation (Core Only)**
+
 ```bash
-# Install globally via npm
+# Install core features only (fastest)
 npm install -g @rollenasistores/devsum
 
 # Or use with npx (no installation needed)
-npx devsum setup
+npx @rollenasistores/devsum@latest setup
 ```
+
+#### 🔧 **Full Installation (All Features)**
+
+```bash
+# Install with all AI providers and features
+npm install -g @rollenasistores/devsum
+npm run install:full
+
+# Or install everything at once
+npm install -g @rollenasistores/devsum --save-optional
+```
+
+#### 🐳 **Docker Installation**
+
+```bash
+# Run with Docker (no local installation)
+docker run -v $(pwd):/workspace rollenasistores/devsum report --since 7d
+
+# Or use docker-compose
+docker-compose up devsum
+```
+
+#### ⚡ **Installation Speed Comparison**
+
+| Method       | Size  | Time | Features             |
+| ------------ | ----- | ---- | -------------------- |
+| Core Only    | ~5MB  | ~10s | Basic reporting      |
+| Full Install | ~25MB | ~30s | All AI providers     |
+| Docker       | ~50MB | ~15s | Complete environment |
+| npx          | ~0MB  | ~5s  | No installation      |
 
 ### ⚡ Setup (One-time)
 

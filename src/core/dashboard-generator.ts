@@ -48,15 +48,15 @@ export class DashboardGenerator {
    * Generate CSS styles for the dashboard
    */
   private generateStyles(theme: 'light' | 'dark'): string {
-    const isDark = theme === 'dark';
-    const bgColor = isDark ? '#1a1a1a' : '#ffffff';
-    const textColor = isDark ? '#ffffff' : '#333333';
-    const cardBg = isDark ? '#2d2d2d' : '#f8f9fa';
-    const borderColor = isDark ? '#404040' : '#e9ecef';
-    const accentColor = '#007bff';
-    const successColor = '#28a745';
-    const warningColor = '#ffc107';
-    const dangerColor = '#dc3545';
+    // Minimalist black and white design
+    const bgColor = '#ffffff';
+    const textColor = '#000000';
+    const cardBg = '#ffffff';
+    const borderColor = '#000000';
+    const accentColor = '#000000';
+    const successColor = '#000000';
+    const warningColor = '#666666';
+    const dangerColor = '#000000';
 
     return `
         * {
@@ -66,11 +66,11 @@ export class DashboardGenerator {
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
             background-color: ${bgColor};
             color: ${textColor};
-            line-height: 1.6;
-            transition: all 0.3s ease;
+            line-height: 1.4;
+            font-size: 14px;
         }
 
         .dashboard-container {
@@ -82,22 +82,23 @@ export class DashboardGenerator {
         .header {
             text-align: center;
             margin-bottom: 40px;
-            padding: 30px;
-            background: linear-gradient(135deg, ${accentColor}, #0056b3);
-            border-radius: 15px;
-            color: white;
-            box-shadow: 0 10px 30px rgba(0, 123, 255, 0.3);
+            padding: 20px;
+            border: 2px solid ${borderColor};
+            background: ${cardBg};
+            color: ${textColor};
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: 700;
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         .header .subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
+            font-size: 0.9rem;
+            font-weight: 300;
         }
 
         .metrics-grid {
@@ -110,56 +111,40 @@ export class DashboardGenerator {
         .metric-card {
             background: ${cardBg};
             border: 1px solid ${borderColor};
-            border-radius: 12px;
-            padding: 25px;
+            padding: 20px;
             text-align: center;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
             position: relative;
-            overflow: hidden;
-        }
-
-        .metric-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-        }
-
-        .metric-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, ${accentColor}, ${successColor});
         }
 
         .metric-value {
-            font-size: 2.5rem;
-            font-weight: 700;
+            font-size: 2rem;
+            font-weight: 300;
             margin-bottom: 8px;
-            color: ${accentColor};
+            color: ${textColor};
         }
 
         .metric-label {
-            font-size: 1rem;
+            font-size: 0.8rem;
             color: ${textColor};
-            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 300;
+        }
+
+        .metric-change {
+            font-size: 0.7rem;
+            margin-top: 8px;
+            font-weight: 300;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        .metric-change {
-            font-size: 0.9rem;
-            margin-top: 8px;
-            font-weight: 600;
-        }
-
         .metric-change.positive {
-            color: ${successColor};
+            color: ${textColor};
         }
 
         .metric-change.negative {
-            color: ${dangerColor};
+            color: ${warningColor};
         }
 
         .charts-section {
@@ -167,21 +152,14 @@ export class DashboardGenerator {
         }
 
         .section-title {
-            font-size: 1.8rem;
-            margin-bottom: 25px;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
             color: ${textColor};
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .section-title::before {
-            content: '';
-            width: 4px;
-            height: 30px;
-            background: linear-gradient(180deg, ${accentColor}, ${successColor});
-            border-radius: 2px;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid ${borderColor};
+            padding-bottom: 10px;
         }
 
         .charts-grid {
@@ -194,16 +172,17 @@ export class DashboardGenerator {
         .chart-container {
             background: ${cardBg};
             border: 1px solid ${borderColor};
-            border-radius: 12px;
-            padding: 25px;
+            padding: 20px;
             position: relative;
         }
 
         .chart-title {
-            font-size: 1.2rem;
-            margin-bottom: 20px;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
             color: ${textColor};
-            font-weight: 600;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .chart-canvas {
@@ -214,8 +193,7 @@ export class DashboardGenerator {
         .insights-section {
             background: ${cardBg};
             border: 1px solid ${borderColor};
-            border-radius: 12px;
-            padding: 30px;
+            padding: 20px;
             margin-bottom: 40px;
         }
 
@@ -226,22 +204,24 @@ export class DashboardGenerator {
         }
 
         .insight-card {
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid ${accentColor};
-            background: ${isDark ? '#3a3a3a' : '#f1f3f4'};
+            padding: 15px;
+            border: 1px solid ${borderColor};
+            background: ${cardBg};
         }
 
         .insight-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 10px;
+            font-size: 0.9rem;
+            font-weight: 300;
+            margin-bottom: 8px;
             color: ${textColor};
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .insight-content {
             color: ${textColor};
-            opacity: 0.8;
+            font-size: 0.8rem;
+            line-height: 1.4;
         }
 
         .suggestion-list {
@@ -259,16 +239,18 @@ export class DashboardGenerator {
         }
 
         .suggestion-list li::before {
-            content: '💡';
-            margin-right: 10px;
+            content: '•';
+            margin-right: 8px;
+            font-weight: bold;
         }
 
         .footer {
             text-align: center;
-            padding: 30px;
+            padding: 20px;
             color: ${textColor};
-            opacity: 0.7;
             border-top: 1px solid ${borderColor};
+            font-size: 0.8rem;
+            font-weight: 300;
         }
 
         .export-buttons {
@@ -279,18 +261,20 @@ export class DashboardGenerator {
         }
 
         .export-btn {
-            padding: 10px 20px;
-            background: ${accentColor};
-            color: white;
-            border: none;
-            border-radius: 6px;
+            padding: 8px 16px;
+            background: ${cardBg};
+            color: ${textColor};
+            border: 1px solid ${borderColor};
             cursor: pointer;
-            font-size: 0.9rem;
-            transition: background 0.3s ease;
+            font-size: 0.8rem;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .export-btn:hover {
-            background: #0056b3;
+            background: ${textColor};
+            color: ${cardBg};
         }
 
         .heatmap-container {
@@ -303,15 +287,12 @@ export class DashboardGenerator {
         .heatmap-day {
             width: 12px;
             height: 12px;
-            border-radius: 2px;
-            background: ${isDark ? '#2d2d2d' : '#f0f0f0'};
-            transition: all 0.3s ease;
+            background: #f0f0f0;
+            border: 1px solid ${borderColor};
         }
 
         .heatmap-day:hover {
-            transform: scale(1.2);
-            z-index: 10;
-            position: relative;
+            background: ${textColor};
         }
 
         .heatmap-legend {
@@ -319,7 +300,8 @@ export class DashboardGenerator {
             align-items: center;
             gap: 10px;
             margin-top: 10px;
-            font-size: 0.9rem;
+            font-size: 0.7rem;
+            font-weight: 300;
         }
 
         .legend-item {
@@ -375,6 +357,32 @@ export class DashboardGenerator {
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        
+        /* Theme-specific styles */
+        .dark-theme {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --card-bg: #2d2d2d;
+            --border-color: #404040;
+        }
+        
+        .light-theme {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --card-bg: #f8f9fa;
+            --border-color: #e9ecef;
+        }
+        
+        /* Apply theme variables when classes are present */
+        .dark-theme body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        
+        .light-theme body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
         }
     `;
   }
@@ -497,19 +505,19 @@ export class DashboardGenerator {
             </div>
             <div class="heatmap-legend">
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #ebedf0;"></div>
+                    <div class="legend-color" style="background: #f0f0f0;"></div>
                     <span>No commits</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #c6e48b;"></div>
+                    <div class="legend-color" style="background: #cccccc;"></div>
                     <span>1-3 commits</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #7bc96f;"></div>
+                    <div class="legend-color" style="background: #666666;"></div>
                     <span>4-6 commits</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #239a3b;"></div>
+                    <div class="legend-color" style="background: #000000;"></div>
                     <span>7+ commits</span>
                 </div>
             </div>
@@ -638,9 +646,23 @@ export class DashboardGenerator {
         
         // Initialize charts when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
+            // Apply theme detection for auto theme
+            applyThemeDetection();
             initializeCharts();
             generateHeatmap();
         });
+        
+        function applyThemeDetection() {
+            // Check if we're in auto theme mode and apply system preference
+            const body = document.body;
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (prefersDark) {
+                body.classList.add('dark-theme');
+            } else {
+                body.classList.add('light-theme');
+            }
+        }
         
         function initializeCharts() {
             // Productivity trends chart
@@ -675,8 +697,8 @@ export class DashboardGenerator {
                     datasets: [{
                         label: 'Productivity Score',
                         data: data.map(d => d.score),
-                        borderColor: '#007bff',
-                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        borderColor: '#000000',
+                        backgroundColor: 'rgba(0, 0, 0, 0.1)',
                         tension: 0.4,
                         fill: true
                     }]
@@ -710,8 +732,8 @@ export class DashboardGenerator {
                     datasets: [{
                         data: Object.values(data),
                         backgroundColor: [
-                            '#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1',
-                            '#fd7e14', '#20c997', '#e83e8c', '#6c757d', '#17a2b8'
+                            '#000000', '#333333', '#666666', '#999999', '#cccccc',
+                            '#f0f0f0', '#e0e0e0', '#d0d0d0', '#c0c0c0', '#b0b0b0'
                         ]
                     }]
                 },
@@ -738,7 +760,7 @@ export class DashboardGenerator {
                     datasets: [{
                         label: 'Commits',
                         data: data.map(a => a.commits),
-                        backgroundColor: '#007bff'
+                        backgroundColor: '#000000'
                     }]
                 },
                 options: {
@@ -775,9 +797,9 @@ export class DashboardGenerator {
                             Math.min(data.averageCommitSize * 5, 100),
                             Math.max(100 - data.technicalDebtIndicators.length * 10, 0)
                         ],
-                        borderColor: '#007bff',
-                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
-                        pointBackgroundColor: '#007bff'
+                        borderColor: '#000000',
+                        backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                        pointBackgroundColor: '#000000'
                     }]
                 },
                 options: {
@@ -824,10 +846,10 @@ export class DashboardGenerator {
         }
         
         function getHeatmapColor(commits) {
-            if (commits === 0) return '#ebedf0';
-            if (commits <= 3) return '#c6e48b';
-            if (commits <= 6) return '#7bc96f';
-            return '#239a3b';
+            if (commits === 0) return '#f0f0f0';
+            if (commits <= 3) return '#cccccc';
+            if (commits <= 6) return '#666666';
+            return '#000000';
         }
         
         // Export functions
@@ -859,10 +881,9 @@ export class DashboardGenerator {
    */
   private determineTheme(theme: 'light' | 'dark' | 'auto'): 'light' | 'dark' {
     if (theme === 'auto') {
-      // Check system preference
-      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
+      // In Node.js environment, default to light theme
+      // The actual theme detection will happen in the browser when the HTML is opened
+      return 'light';
     }
     return theme;
   }

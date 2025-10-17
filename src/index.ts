@@ -9,13 +9,14 @@ import { commitCommand } from './commands/commit.js';
 import { analyticsCommand } from './commands/analytics.js';
 import { telemetryCommand } from './commands/telemetry.js';
 import { UpdateChecker } from './core/updateChecker.js';
+import { forcedUpdate } from './core/forced-update.js';
 import { getVersion } from './utils/version.js';
 
 const program = new Command();
 
 // Initialize update checker
 const currentVersion = getVersion();
-const updateChecker = new UpdateChecker('devsum', currentVersion);
+const updateChecker = new UpdateChecker('@rollenasistores/devsum', currentVersion);
 
 program
   .name('devsum')
@@ -77,13 +78,19 @@ program.on('command:*', operands => {
   process.exit(1);
 });
 
-// Enhanced program execution with update notifications
+// Enhanced program execution with forced update checks
 export async function runWithUpdateCheck() {
   try {
-    // Check for updates in background (non-blocking)
+    // Check for forced updates first (blocking)
+    const canContinue = await forcedUpdate.checkAndEnforce();
+    if (!canContinue) {
+      process.exit(1); // Block execution if forced update is required
+    }
+
+    // Check for regular updates in background (non-blocking)
     const updatePromise = updateChecker.checkForUpdates().catch(() => null);
 
-    // Parse commands first
+    // Parse commands
     await program.parseAsync();
 
     // Show update notification after command execution

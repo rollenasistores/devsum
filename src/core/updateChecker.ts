@@ -9,6 +9,8 @@ interface UpdateInfo {
   latestVersion?: string;
   currentVersion: string;
   hasUpdate?: boolean;
+  isForcedUpdate?: boolean;
+  criticalUpdate?: boolean;
 }
 
 interface PackageInfo {
@@ -129,7 +131,7 @@ export class UpdateChecker {
       );
       console.log(
         chalk.yellow('│') +
-          chalk.gray('  Release notes: https://github.com/your-org/devsum/releases') +
+          chalk.gray('  Release notes: https://github.com/rollenasistores/devsum/releases') +
           ' '.repeat(1) +
           chalk.yellow('│')
       );
@@ -232,11 +234,15 @@ export class UpdateChecker {
   async forceCheckForUpdates(): Promise<UpdateInfo> {
     try {
       const latestVersion = await this.fetchLatestVersion();
+      const hasUpdate = this.isNewerVersion(latestVersion, this.currentVersion);
+      const criticalUpdate = this.isCriticalUpdate(latestVersion, this.currentVersion);
+
       const updateInfo: UpdateInfo = {
         lastChecked: new Date().toISOString(),
         latestVersion,
         currentVersion: this.currentVersion,
-        hasUpdate: this.isNewerVersion(latestVersion, this.currentVersion),
+        hasUpdate,
+        criticalUpdate,
       };
 
       await this.saveUpdateInfo(updateInfo);
@@ -245,6 +251,61 @@ export class UpdateChecker {
       throw new Error(
         `Failed to check for updates: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
+    }
+  }
+
+  /**
+   * Check if update is critical (major version difference)
+   */
+  private isCriticalUpdate(latestVersion: string, currentVersion: string): boolean {
+    try {
+      const latest = this.parseVersion(latestVersion);
+      const current = this.parseVersion(currentVersion);
+      
+      // Critical if major version is different
+      return latest.major > current.major;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Parse version string into major.minor.patch
+   */
+  private parseVersion(version: string): { major: number; minor: number; patch: number } {
+    const parts = version.replace(/[^0-9.]/g, '').split('.').map(Number);
+    return {
+      major: parts[0] || 0,
+      minor: parts[1] || 0,
+      patch: parts[2] || 0,
+    };
+  }
+
+  /**
+   * Check if forced update is required
+   */
+  async checkForcedUpdate(): Promise<{ required: boolean; updateInfo?: UpdateInfo }> {
+    try {
+      const updateInfo = await this.forceCheckForUpdates();
+      
+      if (updateInfo.criticalUpdate) {
+        return { required: true, updateInfo };
+      }
+
+      // Check if user is more than 2 minor versions behind
+      const latest = this.parseVersion(updateInfo.latestVersion || '0.0.0');
+      const current = this.parseVersion(this.currentVersion);
+      
+      const isSignificantlyBehind = latest.major > current.major || 
+        (latest.major === current.major && latest.minor > current.minor + 1);
+      
+      if (isSignificantlyBehind) {
+        return { required: true, updateInfo };
+      }
+
+      return { required: false, updateInfo };
+    } catch (error) {
+      return { required: false };
     }
   }
 }

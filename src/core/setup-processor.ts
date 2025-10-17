@@ -538,7 +538,7 @@ export class SetupProcessor {
     console.log(chalk.gray('   • Verify API key permissions'));
     console.log(chalk.gray('   • Ensure write access to config directory'));
     console.log();
-    console.log(chalk.blue('For help: https://github.com/your-repo/devsum/issues'));
+    console.log(chalk.blue('For help: https://github.com/rollenasistores/devsum/issues'));
     console.log(chalk.red('═'.repeat(60)));
   }
 }

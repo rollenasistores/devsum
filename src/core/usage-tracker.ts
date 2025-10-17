@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
-import { homedir } from 'os'
+import { homedir, platform, arch, cpus, totalmem, freemem } from 'os'
 import { configManager } from './config.js'
 
 interface UsageConfig {
@@ -19,6 +19,18 @@ interface UsageData {
     outputFormat?: string
     provider?: string
   }
+}
+
+interface SystemInfo {
+  platform: string
+  arch: string
+  nodeVersion: string
+  cliVersion: string
+  cpuCount: number
+  totalMemory: number
+  freeMemory: number
+  timezone: string
+  locale: string
 }
 
 export class UsageTracker {
@@ -102,18 +114,35 @@ export class UsageTracker {
     }
 
     try {
+      // Get system information
+      const systemInfo = this.getSystemInfo()
+      
+      // Enhanced metadata with system info
+      const enhancedMetadata = {
+        ...data.metadata,
+        system: systemInfo,
+        cli: {
+          version: this.getCliVersion(),
+          nodeVersion: process.version,
+          platform: process.platform,
+          arch: process.arch
+        }
+      }
+
       const payload = {
         commandType: data.commandType,
         userId: this.config.userId,
         success: data.success,
-        metadata: data.metadata
+        metadata: enhancedMetadata
       }
 
       const response = await fetch(this.API_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'devsum-cli'
+          'User-Agent': `devsum-cli/${this.getCliVersion()} (${systemInfo.platform}; ${systemInfo.arch})`,
+          'X-Timezone': systemInfo.timezone,
+          'X-Locale': systemInfo.locale
         },
         body: JSON.stringify(payload)
       })
@@ -125,6 +154,34 @@ export class UsageTracker {
       // Silently fail - don't interrupt user workflow
       console.warn('Usage tracking failed:', error)
     }
+  }
+
+  private getSystemInfo(): SystemInfo {
+    return {
+      platform: platform(),
+      arch: arch(),
+      nodeVersion: process.version,
+      cliVersion: this.getCliVersion(),
+      cpuCount: cpus().length,
+      totalMemory: totalmem(),
+      freeMemory: freemem(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      locale: Intl.DateTimeFormat().resolvedOptions().locale
+    }
+  }
+
+  private getCliVersion(): string {
+    try {
+      // Try to get version from package.json
+      const packagePath = join(__dirname, '..', '..', 'package.json')
+      if (existsSync(packagePath)) {
+        const packageData = JSON.parse(readFileSync(packagePath, 'utf8'))
+        return packageData.version || '1.0.0'
+      }
+    } catch (error) {
+      // Fallback version
+    }
+    return '1.0.0'
   }
 
   public async setEnabled(enabled: boolean): Promise<void> {

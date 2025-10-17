@@ -66,7 +66,7 @@ export class ForcedUpdate {
     console.log(chalk.white('   yarn global add @rollenasistores/devsum'));
     console.log();
     console.log(chalk.blue('📖 Release Notes:'));
-    console.log(chalk.gray('   https://github.com/rollenasistores/devsum/releases'));
+    console.log(chalk.gray('   http://devsum.rollenasistores.site/'));
     console.log();
     console.log(chalk.red.bold('❌ DevSum CLI execution blocked until update is completed.'));
     console.log(chalk.gray('   Please update and try again.'));

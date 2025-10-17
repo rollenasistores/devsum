@@ -4,6 +4,7 @@ import { configManager } from './config.js';
 import { Config, AIProvider } from '../types/index.js';
 import { getVersion } from '../utils/version.js';
 import { AIService } from './ai.js';
+import { authManager } from './auth.js';
 
 /**
  * Service responsible for processing setup operations
@@ -323,11 +324,20 @@ export class SetupProcessor {
             name: chalk.green('🚀 OpenAI (GPT-4)') + chalk.gray(' - Industry leading AI'),
             value: 'openai',
           },
+          {
+            name: chalk.magenta('☁️  DevSum Cloud') + chalk.gray(' - No API keys needed'),
+            value: 'devsum-cloud',
+          },
         ],
       },
     ]);
 
     this.displayProviderInfo(answers.provider);
+
+    // Handle cloud provider differently
+    if (answers.provider === 'devsum-cloud') {
+      return await this.setupCloudProviderInteractive(answers.name);
+    }
 
     const configAnswers = await inquirer.prompt([
       {
@@ -523,6 +533,100 @@ export class SetupProcessor {
   }
 
   /**
+   * Setup cloud provider
+   */
+  private async setupCloudProvider(config: Config): Promise<void> {
+    console.log();
+    console.log(chalk.cyan('☁️  Setting up DevSum Cloud...'));
+    
+    // Check if already authenticated
+    const isAuthenticated = await authManager.isAuthenticated();
+    if (!isAuthenticated) {
+      console.log(chalk.yellow('🔐 Authentication required for DevSum Cloud'));
+      console.log(chalk.gray('   Opening browser for authentication...'));
+      
+      try {
+        const token = await authManager.startOAuthFlow();
+        
+        // Save auth config
+        const authConfig = {
+          token,
+          userId: 'temp-user-id',
+          email: 'user@example.com',
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          baseUrl: 'https://devsum.vercel.app',
+        };
+        
+        await configManager.saveAuthConfig(authConfig);
+        console.log(chalk.green('✅ Authentication successful!'));
+      } catch (error) {
+        console.log(chalk.red('❌ Authentication failed'));
+        console.log(chalk.gray('   Error:'), error instanceof Error ? error.message : 'Unknown error');
+        throw new Error('Cloud authentication failed');
+      }
+    } else {
+      console.log(chalk.green('✅ Already authenticated with DevSum Cloud'));
+    }
+
+    // Add cloud provider
+    await configManager.addCloudProvider();
+    const updatedConfig = await configManager.loadConfig();
+    if (!updatedConfig) throw new Error('Failed to load updated config');
+    Object.assign(config, updatedConfig);
+    
+    // Set as default if no other providers
+    if (config.providers.length === 1 && config.providers[0]) {
+      config.defaultProvider = 'devsum-cloud';
+      config.providers[0].isDefault = true;
+    }
+  }
+
+  /**
+   * Setup cloud provider interactively
+   */
+  private async setupCloudProviderInteractive(name: string): Promise<AIProvider> {
+    console.log();
+    console.log(chalk.cyan('☁️  Setting up DevSum Cloud...'));
+    
+    // Check if already authenticated
+    const isAuthenticated = await authManager.isAuthenticated();
+    if (!isAuthenticated) {
+      console.log(chalk.yellow('🔐 Authentication required for DevSum Cloud'));
+      console.log(chalk.gray('   Opening browser for authentication...'));
+      
+      try {
+        const token = await authManager.startOAuthFlow();
+        
+        // Save auth config
+        const authConfig = {
+          token,
+          userId: 'temp-user-id',
+          email: 'user@example.com',
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          baseUrl: 'https://devsum.vercel.app',
+        };
+        
+        await configManager.saveAuthConfig(authConfig);
+        console.log(chalk.green('✅ Authentication successful!'));
+      } catch (error) {
+        console.log(chalk.red('❌ Authentication failed'));
+        console.log(chalk.gray('   Error:'), error instanceof Error ? error.message : 'Unknown error');
+        throw new Error('Cloud authentication failed');
+      }
+    } else {
+      console.log(chalk.green('✅ Already authenticated with DevSum Cloud'));
+    }
+
+    return {
+      name,
+      provider: 'devsum-cloud',
+      apiKey: '', // Will be filled with auth token when used
+      model: 'gemini-2.0-flash',
+      isDefault: false,
+    };
+  }
+
+  /**
    * Display error message
    */
   private displayError(error: unknown): void {
@@ -538,7 +642,7 @@ export class SetupProcessor {
     console.log(chalk.gray('   • Verify API key permissions'));
     console.log(chalk.gray('   • Ensure write access to config directory'));
     console.log();
-    console.log(chalk.blue('For help: https://github.com/rollenasistores/devsum/issues'));
+    console.log(chalk.blue('For help: http://devsum.rollenasistores.site/'));
     console.log(chalk.red('═'.repeat(60)));
   }
 }

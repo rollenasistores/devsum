@@ -131,7 +131,7 @@ export class UpdateChecker {
       );
       console.log(
         chalk.yellow('│') +
-          chalk.gray('  Release notes: https://github.com/rollenasistores/devsum/releases') +
+          chalk.gray('  Release notes: http://devsum.rollenasistores.site/') +
           ' '.repeat(1) +
           chalk.yellow('│')
       );

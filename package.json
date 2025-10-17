@@ -1,7 +1,7 @@
 {
   "name": "@rollenasistores/devsum",
-  "version": "1.6.2",
-  "description": "🚀 AI-powered CLI tool that generates professional accomplishment reports from git commits. Transform your development work into compelling narratives for performance reviews, sprint summaries, and project updates.",
+  "version": "1.7.0",
+  "description": "DevSum CLI uses AI to analyze your git history and generate polished accomplishment summaries. Perfect for performance reviews, sprint reports, and project updates.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -80,7 +80,7 @@
   "bugs": {
     "url": "https://github.com/rollenasistores/devsum/issues"
   },
-  "homepage": "https://github.com/rollenasistores/devsum#readme",
+  "homepage": "http://devsum.rollenasistores.site/",
   "funding": {
     "type": "github",
     "url": "https://github.com/sponsors/rollenasistores"
@@ -92,6 +92,7 @@
     "commander": "^12.1.0",
     "inquirer": "^9.2.15",
     "marked": "^16.2.1",
+    "open": "^10.1.0",
     "openai": "^5.20.2",
     "puppeteer": "^24.19.0",
     "simple-git": "^3.25.0",

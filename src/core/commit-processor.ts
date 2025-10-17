@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { configManager } from './config.js';
 import { GitService } from './git.js';
 import { AIService } from './ai.js';
+import { CloudAIService } from './cloud-ai-service.js';
 import { DisplayService } from './display-service.js';
 import { CommitValidator } from './commit-validator.js';
 import { BranchManager } from './branch-manager.js';
@@ -264,7 +265,7 @@ export class CommitProcessor {
    * Handle full auto workflow
    */
   private async handleAutoWorkflow(
-    aiService: AIService,
+    aiService: AIService | CloudAIService,
     options: CommitOptions & {
       auto?: boolean;
       conventional?: boolean;
@@ -487,7 +488,7 @@ export class CommitProcessor {
    * Handle auto-branch generation workflow
    */
   private async handleAutoBranchGeneration(
-    aiService: AIService,
+    aiService: AIService | CloudAIService,
     changes: StagedChanges,
     commitMessage: string
   ): Promise<void> {
@@ -514,7 +515,7 @@ export class CommitProcessor {
    * Generate and create branch for auto-branch mode
    */
   private async generateAndCreateBranch(
-    aiService: AIService,
+    aiService: AIService | CloudAIService,
     changes: StagedChanges
   ): Promise<string> {
     let generatedBranchName = await aiService.generateBranchName(changes);

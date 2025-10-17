@@ -36,7 +36,7 @@ interface SystemInfo {
 export class UsageTracker {
   private config: UsageConfig
   private configPath: string
-  private readonly API_ENDPOINT = 'http://localhost:3000/api/usage/track'
+  private readonly API_ENDPOINT = 'http://devsum.rollenasistores.site/api/usage/track'
 
   constructor() {
     this.configPath = join(homedir(), '.devsum', 'usage-config.json')

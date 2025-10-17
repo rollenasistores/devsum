@@ -1,7 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { Config, AIProvider } from '../types/index.js';
+import { Config, AIProvider, AuthConfig } from '../types/index.js';
+import { authManager } from './auth.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.config', 'devsum');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
@@ -190,11 +191,49 @@ export class ConfigManager {
     }
 
     if (providerName) {
-      return config.providers.find(p => p.name === providerName) || null;
+      const provider = config.providers.find(p => p.name === providerName);
+      
+      // If it's a cloud provider, check authentication
+      if (provider?.provider === 'devsum-cloud') {
+        const isAuthenticated = await authManager.isAuthenticated();
+        if (!isAuthenticated) {
+          throw new Error('Not authenticated. Please run "devsum login" to authenticate with DevSum Cloud.');
+        }
+        
+        // Update provider with current auth token
+        const authToken = await authManager.getAuthToken();
+        if (authToken) {
+          return {
+            ...provider,
+            apiKey: authToken,
+          };
+        }
+      }
+      
+      return provider || null;
     }
 
     // Return default provider
-    return config.providers.find(p => p.isDefault) || config.providers[0] || null;
+    const defaultProvider = config.providers.find(p => p.isDefault) || config.providers[0];
+    
+    // If it's a cloud provider, check authentication
+    if (defaultProvider?.provider === 'devsum-cloud') {
+      const isAuthenticated = await authManager.isAuthenticated();
+      if (!isAuthenticated) {
+        throw new Error('Not authenticated. Please run "devsum login" to authenticate with DevSum Cloud.');
+      }
+      
+      // Update provider with current auth token
+      const authToken = await authManager.getAuthToken();
+      if (authToken) {
+        return {
+          ...defaultProvider,
+          apiKey: authToken,
+        };
+      }
+    }
+    
+    return defaultProvider || null;
   }
 
   /**
@@ -248,6 +287,65 @@ export class ConfigManager {
         isDefault: p.name === providerName,
       })),
     };
+  }
+
+  /**
+   * Save authentication configuration
+   */
+  public async saveAuthConfig(authConfig: AuthConfig): Promise<void> {
+    await authManager.saveAuthToken(authConfig);
+  }
+
+  /**
+   * Load authentication configuration
+   */
+  public async loadAuthConfig(): Promise<AuthConfig | null> {
+    return await authManager.loadAuthToken();
+  }
+
+  /**
+   * Clear authentication configuration
+   */
+  public async clearAuthConfig(): Promise<void> {
+    await authManager.clearAuthToken();
+  }
+
+  /**
+   * Check if user is authenticated
+   */
+  public async isAuthenticated(): Promise<boolean> {
+    return await authManager.isAuthenticated();
+  }
+
+  /**
+   * Add cloud provider to configuration
+   */
+  public async addCloudProvider(): Promise<void> {
+    const config = await this.loadConfig();
+    if (!config) {
+      throw new Error('No configuration found. Please run setup first.');
+    }
+
+    const cloudProvider: AIProvider = {
+      name: 'devsum-cloud',
+      provider: 'devsum-cloud',
+      apiKey: '', // Will be filled with auth token when used
+      model: 'gemini-2.0-flash',
+      isDefault: false,
+    };
+
+    // Check if cloud provider already exists
+    const existingIndex = config.providers.findIndex(p => p.name === 'devsum-cloud');
+    
+    if (existingIndex >= 0) {
+      // Update existing cloud provider
+      const updated = [...config.providers];
+      updated[existingIndex] = cloudProvider;
+      await this.saveConfig({ ...config, providers: updated });
+    } else {
+      // Add new cloud provider
+      await this.addProvider(cloudProvider);
+    }
   }
 }
 

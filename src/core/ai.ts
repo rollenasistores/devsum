@@ -9,7 +9,9 @@ import {
   AIProviderType,
   StagedChanges,
   CommitMessageOptions,
+  CloudAIProvider,
 } from '../types/index.js';
+import { CloudAIService } from './cloud-ai-service.js';
 
 /**
  * AI Service class for generating reports and commit messages
@@ -34,7 +36,12 @@ export class AIService {
   /**
    * Create AIService instance from provider configuration
    */
-  public static fromProvider(provider: AIProvider): AIService {
+  public static fromProvider(provider: AIProvider): AIService | CloudAIService {
+    // If it's a cloud provider, return CloudAIService instance
+    if (provider.provider === 'devsum-cloud') {
+      return new CloudAIService(provider as CloudAIProvider);
+    }
+    
     const model = provider.model ?? AIService.getDefaultModel(provider.provider);
     return new AIService(provider.provider, provider.apiKey, model);
   }
@@ -464,6 +471,7 @@ Focus on the impact and value of the changes rather than just listing commits. G
         'claude-3-opus-20240229',
       ] as const,
       openai: ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo'] as const,
+      'devsum-cloud': ['gemini-2.0-flash', 'claude-3-5-sonnet-20241022', 'gpt-4'] as const,
     };
 
     return models[provider] ?? [];
@@ -622,6 +630,7 @@ Focus on the impact and value of the changes rather than just listing commits. G
       gemini: 'gemini-2.0-flash',
       claude: 'claude-3-5-sonnet-20241022',
       openai: 'gpt-4',
+      'devsum-cloud': 'gemini-2.0-flash',
     } as const;
 
     return defaultModels[provider];

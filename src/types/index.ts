@@ -11,9 +11,31 @@ export interface AIProvider {
 }
 
 /**
+ * Cloud AI Provider interface
+ * Extends AIProvider for cloud-based authentication
+ */
+export interface CloudAIProvider extends AIProvider {
+  provider: 'devsum-cloud';
+  apiKey: string; // This will be the auth token
+  baseUrl?: string;
+}
+
+/**
  * Supported AI provider types
  */
-export type AIProviderType = 'claude' | 'openai' | 'gemini';
+export type AIProviderType = 'claude' | 'openai' | 'gemini' | 'devsum-cloud';
+
+/**
+ * Authentication configuration interface
+ * Stores CLI authentication data
+ */
+export interface AuthConfig {
+  token: string;
+  userId: string;
+  email: string;
+  expiresAt: string;
+  baseUrl: string;
+}
 
 /**
  * Main configuration interface
@@ -26,6 +48,7 @@ export interface Config {
   telemetry?: {
     enabled: boolean;
   };
+  auth?: AuthConfig;
 }
 
 /**

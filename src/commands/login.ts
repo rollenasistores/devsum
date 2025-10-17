@@ -2,6 +2,8 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getVersion } from '../utils/version.js';
 import { usageTracker } from '../core/usage-tracker.js';
+import { authManager } from '../core/auth.js';
+import { configManager } from '../core/config.js';
 
 /**
  * Login command class following TypeScript guidelines
@@ -29,19 +31,22 @@ export class LoginCommand {
   /**
    * Execute the login command
    */
-  public async execute(): Promise<void> {
+  public async execute(options: { logout?: boolean; status?: boolean }): Promise<void> {
     const startTime = Date.now()
     let success = false
     let metadata: any = {}
 
     try {
-      this.displayWelcome();
-      this.displayFreeMode();
-      this.displayQuickStart();
-      this.displayExampleCommands();
-      this.displayComingSoon();
-      this.displayFooter();
-      success = true
+      if (options.logout) {
+        await this.handleLogout();
+        success = true
+      } else if (options.status) {
+        await this.handleStatus();
+        success = true
+      } else {
+        await this.handleLogin();
+        success = true
+      }
     } catch (error) {
       success = false
       throw error
@@ -51,7 +56,8 @@ export class LoginCommand {
     const duration = Date.now() - startTime
     metadata = {
       duration,
-      command: 'login'
+      command: 'login',
+      action: options.logout ? 'logout' : options.status ? 'status' : 'login'
     }
 
     await usageTracker.trackUsage({
@@ -166,9 +172,103 @@ export class LoginCommand {
     console.log();
     console.log(
       chalk.gray('   Stay tuned for updates! '),
-      chalk.cyan('https://github.com/rollenasistores/devsum')
+      chalk.cyan('http://devsum.rollenasistores.site/')
     );
     console.log();
+  }
+
+  /**
+   * Handle login flow
+   */
+  private async handleLogin(): Promise<void> {
+    console.clear();
+    this.displayWelcome();
+    
+    // Check if already authenticated
+    const isAuthenticated = await authManager.isAuthenticated();
+    if (isAuthenticated) {
+      console.log(chalk.green('✅ You are already authenticated!'));
+      console.log(chalk.gray('   Use "devsum login --logout" to sign out'));
+      console.log(chalk.gray('   Use "devsum login --status" to check status'));
+      return;
+    }
+
+    console.log(chalk.blue('═'.repeat(60)));
+    console.log(chalk.cyan.bold('🔐 DevSum Cloud Authentication'));
+    console.log();
+    console.log(chalk.gray('   Authenticate to use cloud AI features:'));
+    console.log(chalk.gray('   • No need to configure API keys'));
+    console.log(chalk.gray('   • Access to latest AI models'));
+    console.log(chalk.gray('   • Usage tracking and analytics'));
+    console.log();
+
+    try {
+      console.log(chalk.yellow('🌐 Opening browser for authentication...'));
+      const token = await authManager.startOAuthFlow();
+      
+      // Get user info from token (simplified for now)
+      const authConfig = {
+        token,
+        userId: 'temp-user-id',
+        email: 'user@example.com',
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        baseUrl: 'https://devsum.vercel.app',
+      };
+
+      await configManager.saveAuthConfig(authConfig);
+      
+      console.log(chalk.green('✅ Authentication successful!'));
+      console.log(chalk.gray('   You can now use DevSum with cloud AI features'));
+      console.log();
+      console.log(chalk.cyan('💡 Next steps:'));
+      console.log(chalk.white('   devsum setup --cloud'));
+      console.log(chalk.gray('   Configure DevSum to use cloud AI'));
+      
+    } catch (error) {
+      console.log(chalk.red('❌ Authentication failed'));
+      console.log(chalk.gray('   Error:'), error instanceof Error ? error.message : 'Unknown error');
+      console.log();
+      console.log(chalk.yellow('💡 You can still use DevSum with local AI providers:'));
+      console.log(chalk.white('   devsum setup'));
+      console.log(chalk.gray('   Configure Gemini or Claude API keys locally'));
+    }
+  }
+
+  /**
+   * Handle logout
+   */
+  private async handleLogout(): Promise<void> {
+    console.clear();
+    this.displayWelcome();
+    
+    const isAuthenticated = await authManager.isAuthenticated();
+    if (!isAuthenticated) {
+      console.log(chalk.yellow('ℹ️  You are not currently authenticated'));
+      return;
+    }
+
+    await configManager.clearAuthConfig();
+    console.log(chalk.green('✅ Successfully logged out'));
+    console.log(chalk.gray('   You can still use DevSum with local AI providers'));
+  }
+
+  /**
+   * Handle status check
+   */
+  private async handleStatus(): Promise<void> {
+    console.clear();
+    this.displayWelcome();
+    
+    const isAuthenticated = await authManager.isAuthenticated();
+    if (isAuthenticated) {
+      const authConfig = await configManager.loadAuthConfig();
+      console.log(chalk.green('✅ Authenticated with DevSum Cloud'));
+      console.log(chalk.gray('   Email:'), authConfig?.email || 'Unknown');
+      console.log(chalk.gray('   Expires:'), authConfig?.expiresAt ? new Date(authConfig.expiresAt).toLocaleDateString() : 'Unknown');
+    } else {
+      console.log(chalk.yellow('ℹ️  Not authenticated'));
+      console.log(chalk.gray('   Run "devsum login" to authenticate'));
+    }
   }
 
   /**
@@ -188,7 +288,9 @@ export class LoginCommand {
 const loginCommandInstance = new LoginCommand();
 
 export const loginCommand = new Command('login')
-  .description('Authenticate with DevSum (currently in free mode)')
-  .action(async () => {
-    await loginCommandInstance.execute();
+  .description('Authenticate with DevSum Cloud for AI features')
+  .option('--logout', 'Sign out from DevSum Cloud')
+  .option('--status', 'Check authentication status')
+  .action(async (options) => {
+    await loginCommandInstance.execute(options);
   });

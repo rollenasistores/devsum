@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { setupCommand } from './commands/setup.js';
 import { loginCommand } from './commands/login.js';
 import { reportCommand } from './commands/report.js';
+import { analyzeCommand } from './commands/analyze.js';
 import { updateCommand } from './commands/update.js';
 import { commitCommand } from './commands/commit.js';
 import { analyticsCommand } from './commands/analytics.js';
@@ -21,7 +22,7 @@ const updateChecker = new UpdateChecker('@rollenasistores/devsum', currentVersio
 program
   .name('devsum')
   .description(
-    '🚀 AI-powered CLI tool that generates professional accomplishment reports from git commits'
+    'DevSum CLI uses AI to analyze your git history and generate polished accomplishment summaries. Perfect for performance reviews, sprint reports, and project updates.'
   )
   .version(currentVersion, '-v, --version', 'display version number');
 
@@ -29,6 +30,7 @@ program
 program.addCommand(setupCommand);
 program.addCommand(loginCommand);
 program.addCommand(reportCommand);
+program.addCommand(analyzeCommand);
 program.addCommand(analyticsCommand);
 program.addCommand(updateCommand);
 program.addCommand(commitCommand);
@@ -39,15 +41,15 @@ program.on('--help', () => {
   console.log('');
   console.log(chalk.cyan('Examples:'));
   console.log(chalk.gray('  $ devsum setup                    # Interactive configuration'));
-  console.log(chalk.gray('  $ devsum report --since 7d        # Report for last 7 days'));
-  console.log(chalk.gray('  $ devsum analytics --since 30d    # Interactive analytics dashboard'));
+  console.log(chalk.gray('  $ devsum analyze --since 7d       # Analyze commits for last 7 days'));
+  console.log(chalk.gray('  $ devsum analyze --format=pdf     # Export to PDF'));
   console.log(chalk.gray('  $ devsum commit --auto            # Generate and commit with AI'));
   console.log(chalk.gray('  $ devsum update                   # Check for updates'));
   console.log(chalk.gray('  $ devsum login                    # View free mode info'));
   console.log(chalk.gray('  $ devsum telemetry --status       # Manage usage tracking'));
   console.log('');
   console.log(chalk.blue('Documentation:'));
-  console.log(chalk.gray('  https://github.com/rollenasistores/devsum#readme'));
+  console.log(chalk.gray('  http://devsum.rollenasistores.site/'));
   console.log('');
 });
 
@@ -68,7 +70,8 @@ program.on('command:*', operands => {
   console.error(chalk.red(`❌ Unknown command: ${operands[0]}`));
   console.log(chalk.blue('💡 Available commands:'));
   console.log(chalk.gray('  setup     - Configure DevSum settings'));
-  console.log(chalk.gray('  report    - Generate accomplishment reports'));
+  console.log(chalk.gray('  analyze   - Analyze git commits and generate reports'));
+  console.log(chalk.gray('  report    - Generate accomplishment reports (alias for analyze)'));
   console.log(chalk.gray('  analytics - Interactive analytics dashboard'));
   console.log(chalk.gray('  commit    - Generate AI commit messages'));
   console.log(chalk.gray('  update    - Check for DevSum updates'));

@@ -113,7 +113,7 @@ export class UpdateCommand {
     console.log();
 
     console.log(chalk.blue('📖 Release Notes:'));
-    console.log(chalk.gray('   https://github.com/rollenasistores/devsum/releases'));
+    console.log(chalk.gray('   http://devsum.rollenasistores.site/'));
   }
 
   /**

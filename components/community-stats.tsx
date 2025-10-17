@@ -3,6 +3,10 @@
 import { Card } from "@/components/ui/card"
 import { Star, Download, Users, Heart } from "lucide-react"
 import useSWR from 'swr'
+import { motion } from "framer-motion"
+import { scrollReveal, staggerCards, staggerCard, hoverLift, breathe } from "@/lib/animations"
+import { useInView } from "framer-motion"
+import { useRef } from "react"
 
 interface AnalyticsData {
   github: {
@@ -57,6 +61,27 @@ const testimonials = [
   },
 ]
 
+function AnimatedCounter({ value, isLoading }: { value: string, isLoading: boolean }) {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true })
+  
+  return (
+    <div ref={ref} className="text-3xl font-bold text-card-foreground">
+      {isLoading ? (
+        <div className="h-8 w-16 animate-pulse bg-muted rounded mx-auto" />
+      ) : (
+        <motion.span
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
+          {value}
+        </motion.span>
+      )}
+    </div>
+  )
+}
+
 export function CommunityStats() {
   const { data, error, isLoading } = useSWR<AnalyticsData>('/api/analytics', fetcher, {
     refreshInterval: 300000, // Refresh every 5 minutes
@@ -79,42 +104,95 @@ export function CommunityStats() {
   return (
     <section className="border-b border-border bg-secondary/30 py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
+        <motion.div 
+          className="mx-auto max-w-2xl text-center"
+          variants={scrollReveal}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Trusted by developers worldwide
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">Join thousands of developers using DevSum</p>
-        </div>
+        </motion.div>
 
-        <div className="mx-auto mt-16 grid max-w-6xl grid-cols-2 gap-6 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <Card key={stat.label} className="border-border bg-card p-6 text-center">
-              <div className="mx-auto w-fit rounded-lg bg-primary/10 p-3 text-primary">
-                <stat.icon className="h-6 w-6" />
-              </div>
-              <div className="mt-4 text-3xl font-bold text-card-foreground">
-                {isLoading ? (
-                  <div className="h-8 w-16 animate-pulse bg-muted rounded mx-auto" />
-                ) : (
-                  stat.value
-                )}
-              </div>
-              <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
-            </Card>
+        <motion.div 
+          className="mx-auto mt-16 grid max-w-6xl grid-cols-2 gap-6 lg:grid-cols-4"
+          variants={staggerCards}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
+          {stats.map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              variants={staggerCard}
+              whileHover="hover"
+            >
+              <motion.div variants={hoverLift}>
+                <Card className="border-border bg-card p-6 text-center">
+                  <motion.div 
+                    className="mx-auto w-fit rounded-lg bg-primary/10 p-3 text-primary"
+                    whileHover={{ 
+                      scale: 1.1, 
+                      rotate: [0, -5, 5, -5, 0],
+                      transition: { duration: 0.5 }
+                    }}
+                    variants={breathe}
+                    animate="animate"
+                  >
+                    <stat.icon className="h-6 w-6" />
+                  </motion.div>
+                  <div className="mt-4">
+                    <AnimatedCounter value={stat.value} isLoading={isLoading} />
+                    <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
+                  </div>
+                </Card>
+              </motion.div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
-        <div className="mx-auto mt-16 grid max-w-6xl grid-cols-1 gap-8 lg:grid-cols-3">
-          {testimonials.map((testimonial) => (
-            <Card key={testimonial.author} className="border-border bg-card p-6">
-              <p className="text-sm leading-relaxed text-muted-foreground">"{testimonial.quote}"</p>
-              <div className="mt-4">
-                <div className="font-semibold text-card-foreground">{testimonial.author}</div>
-                <div className="text-xs text-muted-foreground">{testimonial.role}</div>
-              </div>
-            </Card>
+        <motion.div 
+          className="mx-auto mt-16 grid max-w-6xl grid-cols-1 gap-8 lg:grid-cols-3"
+          variants={staggerCards}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
+          {testimonials.map((testimonial, index) => (
+            <motion.div
+              key={testimonial.author}
+              variants={staggerCard}
+              whileHover="hover"
+            >
+              <motion.div variants={hoverLift}>
+                <Card className="border-border bg-card p-6">
+                  <motion.p 
+                    className="text-sm leading-relaxed text-muted-foreground"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.2 + index * 0.1 }}
+                  >
+                    "{testimonial.quote}"
+                  </motion.p>
+                  <motion.div 
+                    className="mt-4"
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
+                  >
+                    <div className="font-semibold text-card-foreground">{testimonial.author}</div>
+                    <div className="text-xs text-muted-foreground">{testimonial.role}</div>
+                  </motion.div>
+                </Card>
+              </motion.div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   )

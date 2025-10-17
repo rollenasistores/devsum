@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import { Header } from "@/components/header"
 import { HeroSection } from "@/components/hero-section"
 import { FeaturesGrid } from "@/components/features-grid"
@@ -9,21 +12,33 @@ import { ExamplesGallery } from "@/components/examples-gallery"
 import { AnalyticsPreview } from "@/components/analytics-preview"
 import { CommunityStats } from "@/components/community-stats"
 import { Footer } from "@/components/footer"
+import { ScrollProgress } from "@/components/scroll-effects"
+import { Loading } from "@/components/loading"
 
-export default async function Page() {
+export default function Page() {
+  const [isLoading, setIsLoading] = useState(true)
+
+  const handleLoadingComplete = () => {
+    setIsLoading(false)
+  }
+
   return (
-    <main className="min-h-screen">
-      <Header />
-      <HeroSection />
-      <FeaturesGrid />
-      <InstallationSection />
-      <UsageExamples />
-      <AIProviders />
-      <CommandReference />
-      <ExamplesGallery />
-      <AnalyticsPreview />
-      <CommunityStats />
-      <Footer />
-    </main>
+    <>
+      {isLoading && <Loading onComplete={handleLoadingComplete} />}
+      <main className={`min-h-screen custom-cursor-page transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
+        <ScrollProgress />
+        <Header />
+        <HeroSection />
+        <FeaturesGrid />
+        <InstallationSection />
+        <UsageExamples />
+        <AIProviders />
+        <CommandReference />
+        <ExamplesGallery />
+        <AnalyticsPreview />
+        <CommunityStats />
+        <Footer />
+      </main>
+    </>
   )
 }

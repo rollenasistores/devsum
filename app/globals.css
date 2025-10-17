@@ -123,4 +123,59 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Hide default cursor only on the main page when custom cursor is active */
+  .custom-cursor-page {
+    cursor: none !important;
+  }
+  .custom-cursor-page * {
+    cursor: none !important;
+  }
+
+  /* Custom scrollbar styles */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: oklch(0.15 0.01 240); /* --card color */
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(
+      180deg,
+      oklch(0.7 0.15 195),
+      oklch(0.65 0.15 160)
+    ); /* primary to accent gradient */
+    border-radius: 4px;
+    border: 1px solid oklch(0.25 0.01 240); /* --border color */
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(
+      180deg,
+      oklch(0.8 0.15 195),
+      oklch(0.75 0.15 160)
+    );
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(
+      180deg,
+      oklch(0.6 0.15 195),
+      oklch(0.55 0.15 160)
+    );
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.7 0.15 195) oklch(0.15 0.01 240);
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
 }

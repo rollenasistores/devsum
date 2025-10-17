@@ -1,6 +1,6 @@
 {
   "name": "@rollenasistores/devsum",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "DevSum CLI uses AI to analyze your git history and generate polished accomplishment summaries. Perfect for performance reviews, sprint reports, and project updates.",
   "type": "module",
   "main": "dist/index.js",

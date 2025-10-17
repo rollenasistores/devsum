@@ -5,13 +5,13 @@ import { Terminal, Github, BookOpen } from "lucide-react"
 export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container mx-auto max-w-7xl px-6 flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Terminal className="h-6 w-6 text-primary" />
           <span className="font-bold text-xl">DevSum CLI</span>
         </Link>
 
-        <nav className="flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-6">
           <Link
             href="/docs"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -30,7 +30,10 @@ export function Header() {
           >
             Examples
           </Link>
-          <Button variant="ghost" size="sm" asChild>
+        </nav>
+
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
             <Link href="https://github.com/rollenasistores/devsum" target="_blank" rel="noopener noreferrer">
               <Github className="h-4 w-4 mr-2" />
               GitHub
@@ -42,7 +45,7 @@ export function Header() {
               Get Started
             </Link>
           </Button>
-        </nav>
+        </div>
       </div>
     </header>
   )

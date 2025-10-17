@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+        
+
+model CliUsageStats {
+  id          String   @id @default(cuid())
+  commandType String   // "commit", "report", "analyze"
+  userId      String?  // Anonymous user ID for tracking unique users
+  success     Boolean  @default(true)
+  metadata    Json?    // Additional data like file count, duration, etc.
+  timestamp   DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@map("cli_usage_stats")
+}
+
+model AnalyticsCache {
+  id        String   @id @default(cuid())
+  key       String   @unique // Cache key like "github_stats", "usage_totals"
+  data      Json     // Cached data
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("analytics_cache")
+}

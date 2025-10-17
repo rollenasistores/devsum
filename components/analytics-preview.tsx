@@ -1,14 +1,70 @@
+'use client'
+
 import { Card } from "@/components/ui/card"
 import { TrendingUp, GitCommit, FileCode, Users } from "lucide-react"
+import useSWR from 'swr'
 
-const stats = [
-  { label: "Total Commits", value: "1,247", icon: GitCommit, trend: "+12%" },
-  { label: "Files Modified", value: "3,891", icon: FileCode, trend: "+8%" },
-  { label: "Contributors", value: "24", icon: Users, trend: "+3" },
-  { label: "Productivity", value: "94%", icon: TrendingUp, trend: "+5%" },
-]
+interface AnalyticsData {
+  github: {
+    stars: number;
+    forks: number;
+    watchers: number;
+    contributors: number;
+    downloads: number;
+  };
+  usage: {
+    totalCommands: number;
+    commits: number;
+    reports: number;
+    analytics: number;
+    activeUsers: number;
+    successRate: number;
+    platformStats: Record<string, number>;
+    recentActivity: number;
+  };
+  trends: {
+    productivity: string;
+    commitsTrend: string;
+    filesTrend: string;
+    usersTrend: string;
+  };
+}
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
+function formatNumber(num: number): string {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M'
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'k'
+  }
+  return num.toString()
+}
 
 export function AnalyticsPreview() {
+  const { data, error, isLoading } = useSWR<AnalyticsData>('/api/analytics', fetcher, {
+    refreshInterval: 300000, // Refresh every 5 minutes
+    revalidateOnFocus: false
+  })
+
+  // Fallback data while loading or on error
+  const stats = data?.usage ? [
+    { label: "Total Commits", value: formatNumber(data.usage.commits || 0), icon: GitCommit, trend: data.trends?.commitsTrend || "+12%" },
+    { label: "Files Analyzed", value: formatNumber(data.usage.analytics || 0), icon: FileCode, trend: data.trends?.filesTrend || "+8%" },
+    { label: "Active Users", value: formatNumber(data.usage.activeUsers || 0), icon: Users, trend: data.trends?.usersTrend || "+3" },
+    { label: "Success Rate", value: `${data.usage.successRate || 0}%`, icon: TrendingUp, trend: "+5%" },
+    { label: "Recent Activity", value: formatNumber(data.usage.recentActivity || 0), icon: FileCode, trend: "24h" },
+    { label: "Productivity", value: data.trends?.productivity || "94%", icon: TrendingUp, trend: "+5%" },
+  ] : [
+    { label: "Total Commits", value: "1,247", icon: GitCommit, trend: "+12%" },
+    { label: "Files Analyzed", value: "3,891", icon: FileCode, trend: "+8%" },
+    { label: "Active Users", value: "24", icon: Users, trend: "+3" },
+    { label: "Success Rate", value: "94%", icon: TrendingUp, trend: "+5%" },
+    { label: "Recent Activity", value: "12", icon: FileCode, trend: "24h" },
+    { label: "Productivity", value: "94%", icon: TrendingUp, trend: "+5%" },
+  ]
+
   return (
     <section className="border-b border-border bg-background py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -27,7 +83,13 @@ export function AnalyticsPreview() {
                 <span className="text-sm font-medium text-accent">{stat.trend}</span>
               </div>
               <div className="mt-4">
-                <div className="text-3xl font-bold text-card-foreground">{stat.value}</div>
+                <div className="text-3xl font-bold text-card-foreground">
+                  {isLoading ? (
+                    <div className="h-8 w-16 animate-pulse bg-muted rounded" />
+                  ) : (
+                    stat.value
+                  )}
+                </div>
                 <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
               </div>
             </Card>

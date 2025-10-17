@@ -13,8 +13,20 @@ export function Loading({ className = "", onComplete }: LoadingProps) {
   const [isComplete, setIsComplete] = useState(false)
   const [isPageLoaded, setIsPageLoaded] = useState(false)
   const [startTime, setStartTime] = useState<number | null>(null)
+  const [shouldSkipLoading, setShouldSkipLoading] = useState(false)
 
   useEffect(() => {
+    // Check if user came from docs page
+    const referrer = document.referrer
+    const isFromDocs = referrer.includes('/docs') || referrer.includes('docs')
+    
+    if (isFromDocs) {
+      setShouldSkipLoading(true)
+      setIsComplete(true)
+      onComplete?.()
+      return
+    }
+
     // Check if page is loaded
     const checkPageLoaded = () => {
       if (document.readyState === 'complete') {
@@ -30,10 +42,10 @@ export function Loading({ className = "", onComplete }: LoadingProps) {
       window.addEventListener('load', checkPageLoaded)
       return () => window.removeEventListener('load', checkPageLoaded)
     }
-  }, [])
+  }, [onComplete])
 
   useEffect(() => {
-    if (!isPageLoaded) return
+    if (!isPageLoaded || shouldSkipLoading) return
 
     const startTime = Date.now()
     setStartTime(startTime)
@@ -58,9 +70,9 @@ export function Loading({ className = "", onComplete }: LoadingProps) {
     }, 200) // Slower updates: every 200ms instead of 100ms
 
     return () => clearInterval(timer)
-  }, [isPageLoaded, onComplete])
+  }, [isPageLoaded, onComplete, shouldSkipLoading])
 
-  if (isComplete) return null
+  if (isComplete || shouldSkipLoading) return null
 
   return (
     <div className={`fixed inset-0 bg-background z-[9999] flex items-center justify-center ${className}`}>
@@ -90,15 +102,6 @@ export function Loading({ className = "", onComplete }: LoadingProps) {
 
       {/* Main loading content */}
       <div className="relative z-10 text-center">
-        {/* DevSum Logo */}
-        <div className="mb-8">
-          <div className="w-16 h-16 mx-auto bg-primary rounded-lg flex items-center justify-center mb-4">
-            <span className="text-2xl font-bold text-primary-foreground">DS</span>
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">
-            DevSum CLI
-          </h1>
-        </div>
 
         {/* Loading animation */}
         <div className="mb-6">
@@ -132,7 +135,7 @@ export function Loading({ className = "", onComplete }: LoadingProps) {
             animate={{ opacity: 1 }}
             transition={{ delay: 1.2 }}
           >
-            Initializing constellation...
+            Initializing application...
           </motion.p>
         </div>
 
@@ -167,9 +170,9 @@ export function Loading({ className = "", onComplete }: LoadingProps) {
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            {progress < 30 && "Connecting to AI providers..."}
-            {progress >= 30 && progress < 60 && "Analyzing git repositories..."}
-            {progress >= 60 && progress < 90 && "Generating reports..."}
+            {progress < 30 && "Loading components..."}
+            {progress >= 30 && progress < 60 && "Preparing interface..."}
+            {progress >= 60 && progress < 90 && "Finalizing setup..."}
             {progress >= 90 && "Almost ready..."}
           </motion.div>
         </motion.div>

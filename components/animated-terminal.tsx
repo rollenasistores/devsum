@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 
 interface TerminalLine {
   text: string
@@ -142,6 +142,8 @@ const terminalSequence: TerminalLine[] = [
 export function AnimatedTerminal() {
   const [displayedLines, setDisplayedLines] = useState<TerminalLine[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [isMouseInside, setIsMouseInside] = useState(false)
+  const terminalRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (currentIndex >= terminalSequence.length) {
@@ -162,9 +164,39 @@ export function AnimatedTerminal() {
     return () => clearTimeout(timer)
   }, [currentIndex])
 
+  // Auto-scroll to bottom when new content is added
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight
+    }
+  }, [displayedLines])
+
+  // Handle scroll wheel only when mouse is inside terminal
+  const handleWheel = (e: React.WheelEvent) => {
+    if (isMouseInside && terminalRef.current) {
+      e.preventDefault()
+      e.stopPropagation()
+      terminalRef.current.scrollTop += e.deltaY
+    }
+  }
+
+  const handleMouseEnter = () => {
+    setIsMouseInside(true)
+  }
+
+  const handleMouseLeave = () => {
+    setIsMouseInside(false)
+  }
+
   return (
-    <div className="h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-      <div className="space-y-1 font-mono text-xs leading-relaxed">
+    <div 
+      ref={terminalRef}
+      className="h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent bg-card"
+      onWheel={handleWheel}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <div className="space-y-1 font-mono text-xs leading-relaxed p-4 pb-8 min-h-full bg-card">
         {displayedLines.map((line, index) => (
           <div
             key={index}
@@ -173,7 +205,14 @@ export function AnimatedTerminal() {
             {line.text || "\u00A0"}
           </div>
         ))}
-        {currentIndex < terminalSequence.length && <div className="inline-block h-4 w-2 animate-pulse bg-primary" />}
+        {currentIndex < terminalSequence.length && (
+          <div className="flex items-center gap-2">
+            <div className="inline-block h-4 w-2 animate-pulse bg-primary" />
+            <span className="text-muted-foreground text-xs">Generating...</span>
+          </div>
+        )}
+        {/* Extra padding at bottom to prevent cut-off */}
+        <div className="h-4" />
       </div>
     </div>
   )

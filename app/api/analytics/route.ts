@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
         by: ['userId'],
         where: { userId: { not: null } },
         _count: { userId: true }
-      }).then(result => result.length).catch(() => 0)
+      }).then((result: { _count: { userId: number } }[]) => result.length).catch(() => 0)
     ])
 
     // Get additional analytics data
@@ -23,21 +23,25 @@ export async function GET(request: NextRequest) {
       prisma.cliUsageStats.groupBy({
         by: ['success'],
         _count: { success: true }
-      }).then(result => {
-        const total = result.reduce((sum, item) => sum + item._count.success, 0)
-        const successful = result.find(item => item.success)?._count.success || 0
-        return total > 0 ? Math.round((successful / total) * 100) : 0
-      }).catch(() => 0),
+      }).then((result: { success: boolean; _count: { success: number } }[]) => {
+        const total = result.reduce((sum: number, item: { success: boolean; _count: { success: number } }) => sum + item._count.success, 0)
+        const successful = result.find((item: { success: boolean; _count: { success: number } }) => item.success)?._count.success || 0
+        const rate = total > 0 ? Math.round((successful / total) * 100) : 0
+        return rate
+      }).catch((error: unknown) => {
+        console.error('Error calculating success rate:', error)
+        return 0
+      }),
       
       // Platform statistics
       prisma.cliUsageStats.findMany({
         select: { metadata: true },
         take: 1000
-      }).then(records => {
+      }).then((records: { metadata: any }[]) => {
         const platforms = records
-          .map(record => record.metadata?.system?.platform)
+          .map((record: { metadata: any }) => record.metadata?.system?.platform)
           .filter(Boolean)
-          .reduce((acc, platform) => {
+          .reduce((acc: Record<string, number>, platform: string) => {
             acc[platform] = (acc[platform] || 0) + 1
             return acc
           }, {} as Record<string, number>)

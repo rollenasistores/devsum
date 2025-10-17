@@ -15,8 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract additional analytics data
-    const ip = request.ip || 
-               request.headers.get('x-forwarded-for')?.split(',')[0] || 
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
                request.headers.get('x-real-ip') || 
                'unknown'
     

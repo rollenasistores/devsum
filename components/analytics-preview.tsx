@@ -44,33 +44,35 @@ function formatNumber(num: number): string {
 
 export function AnalyticsPreview() {
   const { data, error, isLoading } = useSWR<AnalyticsData>('/api/analytics', fetcher, {
-    refreshInterval: 300000, // Refresh every 5 minutes
-    revalidateOnFocus: false
+    refreshInterval: 30000, // Refresh every 30 seconds for testing
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true
   })
+
+  // Debug logging
+  if (data) {
+    console.log('Analytics data received:', data)
+  }
 
   // Fallback data while loading or on error
   const stats = data?.usage ? [
     { label: "Total Commits", value: formatNumber(data.usage.commits || 0), icon: GitCommit, trend: data.trends?.commitsTrend || "+12%" },
-    { label: "Files Analyzed", value: formatNumber(data.usage.analytics || 0), icon: FileCode, trend: data.trends?.filesTrend || "+8%" },
     { label: "Active Users", value: formatNumber(data.usage.activeUsers || 0), icon: Users, trend: data.trends?.usersTrend || "+3" },
     { label: "Success Rate", value: `${data.usage.successRate || 0}%`, icon: TrendingUp, trend: "+5%" },
     { label: "Recent Activity", value: formatNumber(data.usage.recentActivity || 0), icon: FileCode, trend: "24h" },
-    { label: "Productivity", value: data.trends?.productivity || "94%", icon: TrendingUp, trend: "+5%" },
   ] : [
     { label: "Total Commits", value: "1,247", icon: GitCommit, trend: "+12%" },
-    { label: "Files Analyzed", value: "3,891", icon: FileCode, trend: "+8%" },
     { label: "Active Users", value: "24", icon: Users, trend: "+3" },
     { label: "Success Rate", value: "94%", icon: TrendingUp, trend: "+5%" },
     { label: "Recent Activity", value: "12", icon: FileCode, trend: "24h" },
-    { label: "Productivity", value: "94%", icon: TrendingUp, trend: "+5%" },
   ]
 
   return (
     <section className="border-b border-border bg-background py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Track your progress</h2>
-          <p className="mt-4 text-lg text-muted-foreground">Get insights into your development activity</p>
+          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Usage Analytics</h2>
+          <p className="mt-4 text-lg text-muted-foreground">Real-time insights into DevSum CLI usage</p>
         </div>
 
         <div className="mx-auto mt-16 grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">

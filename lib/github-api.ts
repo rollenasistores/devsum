@@ -253,7 +253,10 @@ export async function aggregateAnalytics(usageData: any): Promise<AnalyticsData>
         commits: usageData?.commits || 0,
         reports: usageData?.reports || 0,
         analytics: usageData?.analytics || 0,
-        activeUsers: usageData?.activeUsers || 0
+        activeUsers: usageData?.activeUsers || 0,
+        successRate: usageData?.successRate || 0,
+        platformStats: usageData?.platformStats || {},
+        recentActivity: usageData?.recentActivity || 0
       },
       trends: {
         productivity,
@@ -278,7 +281,10 @@ export async function aggregateAnalytics(usageData: any): Promise<AnalyticsData>
         commits: 0,
         reports: 0,
         analytics: 0,
-        activeUsers: 0
+        activeUsers: 0,
+        successRate: 0,
+        platformStats: {},
+        recentActivity: 0
       },
       trends: {
         productivity: '0%',

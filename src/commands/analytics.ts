@@ -38,26 +38,26 @@ export class AnalyticsCommand {
     } catch (error) {
       success = false
       throw error
-    } finally {
-      // Track usage
-      const duration = Date.now() - startTime
-      metadata = {
-        duration,
-        provider: options.provider,
-        format: options.format,
-        focus: options.focus,
-        compare: options.compare,
-        interactive: options.interactive,
-        export: options.export
-      }
-
-      await usageTracker.trackUsage({
-        commandType: 'analyze',
-        userId: await usageTracker.getUserId(),
-        success,
-        metadata
-      })
     }
+
+    // Track usage after execution
+    const duration = Date.now() - startTime
+    metadata = {
+      duration,
+      provider: options.provider,
+      format: options.format,
+      focus: options.focus,
+      compare: options.compare,
+      interactive: options.interactive,
+      export: options.export
+    }
+
+    await usageTracker.trackUsage({
+      commandType: 'analyze',
+      userId: await usageTracker.getUserId(),
+      success,
+      metadata
+    })
   }
 }
 

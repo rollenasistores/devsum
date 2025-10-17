@@ -41,25 +41,25 @@ export class ReportCommand {
     } catch (error) {
       success = false
       throw error
-    } finally {
-      // Track usage
-      const duration = Date.now() - startTime
-      metadata = {
-        duration,
-        provider: options.provider,
-        format: options.format,
-        length: options.length,
-        since: options.since,
-        until: options.until
-      }
-
-      await usageTracker.trackUsage({
-        commandType: 'report',
-        userId: await usageTracker.getUserId(),
-        success,
-        metadata
-      })
     }
+
+    // Track usage after execution
+    const duration = Date.now() - startTime
+    metadata = {
+      duration,
+      provider: options.provider,
+      format: options.format,
+      length: options.length,
+      since: options.since,
+      until: options.until
+    }
+
+    await usageTracker.trackUsage({
+      commandType: 'report',
+      userId: await usageTracker.getUserId(),
+      success,
+      metadata
+    })
   }
 }
 

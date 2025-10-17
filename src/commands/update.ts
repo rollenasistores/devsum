@@ -47,22 +47,22 @@ export class UpdateCommand {
       this.displayUpdateError(error);
       success = false
       process.exit(1);
-    } finally {
-      // Track usage
-      const duration = Date.now() - startTime
-      metadata = {
-        duration,
-        command: 'update',
-        checkOnly: options.checkOnly || false
-      }
-
-      await usageTracker.trackUsage({
-        commandType: 'commit', // Use commit as the closest match for update
-        userId: await usageTracker.getUserId(),
-        success,
-        metadata
-      })
     }
+
+    // Track usage after execution
+    const duration = Date.now() - startTime
+    metadata = {
+      duration,
+      command: 'update',
+      checkOnly: options.checkOnly || false
+    }
+
+    await usageTracker.trackUsage({
+      commandType: 'commit', // Use commit as the closest match for update
+      userId: await usageTracker.getUserId(),
+      success,
+      metadata
+    })
   }
 
   /**

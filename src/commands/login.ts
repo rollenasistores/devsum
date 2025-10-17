@@ -45,21 +45,21 @@ export class LoginCommand {
     } catch (error) {
       success = false
       throw error
-    } finally {
-      // Track usage
-      const duration = Date.now() - startTime
-      metadata = {
-        duration,
-        command: 'login'
-      }
-
-      await usageTracker.trackUsage({
-        commandType: 'commit', // Use commit as the closest match for login
-        userId: await usageTracker.getUserId(),
-        success,
-        metadata
-      })
     }
+
+    // Track usage after execution
+    const duration = Date.now() - startTime
+    metadata = {
+      duration,
+      command: 'login'
+    }
+
+    await usageTracker.trackUsage({
+      commandType: 'commit', // Use commit as the closest match for login
+      userId: await usageTracker.getUserId(),
+      success,
+      metadata
+    })
   }
 
   /**

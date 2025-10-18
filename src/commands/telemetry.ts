@@ -8,13 +8,15 @@ export const telemetryCommand = new Command('telemetry')
   .option('--enable', 'Enable usage tracking')
   .option('--disable', 'Disable usage tracking')
   .option('--status', 'Show current telemetry status')
-  .action(async (options) => {
+  .action(async options => {
     try {
       if (options.enable) {
         await usageTracker.setEnabled(true);
         await updateMainConfig(true);
         console.log(chalk.green('✅ Usage tracking enabled'));
-        console.log(chalk.gray('DevSum will anonymously track command usage to help improve the tool.'));
+        console.log(
+          chalk.gray('DevSum will anonymously track command usage to help improve the tool.')
+        );
       } else if (options.disable) {
         await usageTracker.setEnabled(false);
         await updateMainConfig(false);
@@ -23,13 +25,15 @@ export const telemetryCommand = new Command('telemetry')
       } else if (options.status) {
         const enabled = await usageTracker.isEnabled();
         const userId = await usageTracker.getUserId();
-        
+
         console.log(chalk.blue('📊 Telemetry Status:'));
         console.log(chalk.gray(`  Enabled: ${enabled ? chalk.green('Yes') : chalk.red('No')}`));
         console.log(chalk.gray(`  User ID: ${userId}`));
-        
+
         if (enabled) {
-          console.log(chalk.gray('\n  DevSum tracks anonymous usage statistics to help improve the tool.'));
+          console.log(
+            chalk.gray('\n  DevSum tracks anonymous usage statistics to help improve the tool.')
+          );
           console.log(chalk.gray('  No personal data or git content is collected.'));
           console.log(chalk.gray('  Use "devsum telemetry --disable" to opt out.'));
         } else {
@@ -40,11 +44,11 @@ export const telemetryCommand = new Command('telemetry')
         // Show current status by default
         const enabled = await usageTracker.isEnabled();
         const userId = await usageTracker.getUserId();
-        
+
         console.log(chalk.blue('📊 Telemetry Status:'));
         console.log(chalk.gray(`  Enabled: ${enabled ? chalk.green('Yes') : chalk.red('No')}`));
         console.log(chalk.gray(`  User ID: ${userId}`));
-        
+
         console.log(chalk.gray('\nUsage:'));
         console.log(chalk.gray('  devsum telemetry --enable    Enable usage tracking'));
         console.log(chalk.gray('  devsum telemetry --disable   Disable usage tracking'));
@@ -62,11 +66,13 @@ async function updateMainConfig(enabled: boolean): Promise<void> {
     if (config) {
       config.telemetry = {
         ...config.telemetry,
-        enabled
+        enabled,
       };
       await configManager.saveConfig(config);
     }
   } catch (error) {
-    console.warn(chalk.yellow('⚠️  Could not update main configuration, using local settings only'));
+    console.warn(
+      chalk.yellow('⚠️  Could not update main configuration, using local settings only')
+    );
   }
 }

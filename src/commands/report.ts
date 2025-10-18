@@ -31,35 +31,35 @@ export class ReportCommand {
       listModels?: boolean;
     }
   ): Promise<void> {
-    const startTime = Date.now()
-    let success = false
-    let metadata: any = {}
+    const startTime = Date.now();
+    let success = false;
+    let metadata: any = {};
 
     try {
       await this.processor.processReport(options);
-      success = true
+      success = true;
     } catch (error) {
-      success = false
-      throw error
+      success = false;
+      throw error;
     }
 
     // Track usage after execution
-    const duration = Date.now() - startTime
+    const duration = Date.now() - startTime;
     metadata = {
       duration,
       provider: options.provider,
       format: options.format,
       length: options.length,
       since: options.since,
-      until: options.until
-    }
+      until: options.until,
+    };
 
     await usageTracker.trackUsage({
       commandType: 'report',
       userId: await usageTracker.getUserId(),
       success,
-      metadata
-    })
+      metadata,
+    });
   }
 }
 

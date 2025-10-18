@@ -32,40 +32,40 @@ export class LoginCommand {
    * Execute the login command
    */
   public async execute(options: { logout?: boolean; status?: boolean }): Promise<void> {
-    const startTime = Date.now()
-    let success = false
-    let metadata: any = {}
+    const startTime = Date.now();
+    let success = false;
+    let metadata: any = {};
 
     try {
       if (options.logout) {
         await this.handleLogout();
-        success = true
+        success = true;
       } else if (options.status) {
         await this.handleStatus();
-        success = true
+        success = true;
       } else {
         await this.handleLogin();
-        success = true
+        success = true;
       }
     } catch (error) {
-      success = false
-      throw error
+      success = false;
+      throw error;
     }
 
     // Track usage after execution
-    const duration = Date.now() - startTime
+    const duration = Date.now() - startTime;
     metadata = {
       duration,
       command: 'login',
-      action: options.logout ? 'logout' : options.status ? 'status' : 'login'
-    }
+      action: options.logout ? 'logout' : options.status ? 'status' : 'login',
+    };
 
     await usageTracker.trackUsage({
       commandType: 'commit', // Use commit as the closest match for login
       userId: await usageTracker.getUserId(),
       success,
-      metadata
-    })
+      metadata,
+    });
   }
 
   /**
@@ -183,7 +183,7 @@ export class LoginCommand {
   private async handleLogin(): Promise<void> {
     console.clear();
     this.displayWelcome();
-    
+
     // Check if already authenticated
     const isAuthenticated = await authManager.isAuthenticated();
     if (isAuthenticated) {
@@ -205,7 +205,7 @@ export class LoginCommand {
     try {
       console.log(chalk.yellow('🌐 Opening browser for authentication...'));
       const token = await authManager.startOAuthFlow();
-      
+
       // Get user info from token (simplified for now)
       const authConfig = {
         token,
@@ -216,17 +216,19 @@ export class LoginCommand {
       };
 
       await configManager.saveAuthConfig(authConfig);
-      
+
       console.log(chalk.green('✅ Authentication successful!'));
       console.log(chalk.gray('   You can now use DevSum with cloud AI features'));
       console.log();
       console.log(chalk.cyan('💡 Next steps:'));
       console.log(chalk.white('   devsum setup --cloud'));
       console.log(chalk.gray('   Configure DevSum to use cloud AI'));
-      
     } catch (error) {
       console.log(chalk.red('❌ Authentication failed'));
-      console.log(chalk.gray('   Error:'), error instanceof Error ? error.message : 'Unknown error');
+      console.log(
+        chalk.gray('   Error:'),
+        error instanceof Error ? error.message : 'Unknown error'
+      );
       console.log();
       console.log(chalk.yellow('💡 You can still use DevSum with local AI providers:'));
       console.log(chalk.white('   devsum setup'));
@@ -240,7 +242,7 @@ export class LoginCommand {
   private async handleLogout(): Promise<void> {
     console.clear();
     this.displayWelcome();
-    
+
     const isAuthenticated = await authManager.isAuthenticated();
     if (!isAuthenticated) {
       console.log(chalk.yellow('ℹ️  You are not currently authenticated'));
@@ -258,13 +260,16 @@ export class LoginCommand {
   private async handleStatus(): Promise<void> {
     console.clear();
     this.displayWelcome();
-    
+
     const isAuthenticated = await authManager.isAuthenticated();
     if (isAuthenticated) {
       const authConfig = await configManager.loadAuthConfig();
       console.log(chalk.green('✅ Authenticated with DevSum Cloud'));
       console.log(chalk.gray('   Email:'), authConfig?.email || 'Unknown');
-      console.log(chalk.gray('   Expires:'), authConfig?.expiresAt ? new Date(authConfig.expiresAt).toLocaleDateString() : 'Unknown');
+      console.log(
+        chalk.gray('   Expires:'),
+        authConfig?.expiresAt ? new Date(authConfig.expiresAt).toLocaleDateString() : 'Unknown'
+      );
     } else {
       console.log(chalk.yellow('ℹ️  Not authenticated'));
       console.log(chalk.gray('   Run "devsum login" to authenticate'));
@@ -291,6 +296,6 @@ export const loginCommand = new Command('login')
   .description('Authenticate with DevSum Cloud for AI features')
   .option('--logout', 'Sign out from DevSum Cloud')
   .option('--status', 'Check authentication status')
-  .action(async (options) => {
+  .action(async options => {
     await loginCommandInstance.execute(options);
   });

@@ -22,17 +22,17 @@ global.testUtils = {
   mockFileSystem: () => {
     jest.mock('fs/promises');
   },
-  
+
   // Mock git operations
   mockGitService: () => {
     jest.mock('../src/core/git');
   },
-  
+
   // Mock AI service
   mockAIService: () => {
     jest.mock('../src/core/ai');
   },
-  
+
   // Mock configuration
   mockConfig: () => {
     jest.mock('../src/core/config');

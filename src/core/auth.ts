@@ -43,13 +43,13 @@ export class AuthManager {
     try {
       const data = await fs.readFile(AUTH_FILE, 'utf-8');
       const authConfig = JSON.parse(data) as AuthConfig;
-      
+
       // Check if token is expired
       if (new Date(authConfig.expiresAt) < new Date()) {
         await this.clearAuthToken();
         return null;
       }
-      
+
       return authConfig;
     } catch {
       return null;
@@ -118,23 +118,23 @@ export class AuthManager {
    */
   public async startOAuthFlow(): Promise<string> {
     const { default: open } = await import('open');
-    
+
     // Generate random port for callback
     const port = Math.floor(Math.random() * 10000) + 30000;
-    
+
     // Start local callback server
     const { createServer } = await import('http');
     const { URL } = await import('url');
-    
+
     return new Promise((resolve, reject) => {
       const server = createServer(async (req, res) => {
         try {
           const url = new URL(req.url!, `http://localhost:${port}`);
-          
+
           if (url.pathname === '/callback') {
             const token = url.searchParams.get('token');
             const success = url.searchParams.get('success');
-            
+
             if (success === 'true' && token) {
               res.writeHead(200, { 'Content-Type': 'text/html' });
               res.end(`
@@ -155,7 +155,7 @@ export class AuthManager {
                   </body>
                 </html>
               `);
-              
+
               server.close();
               resolve(token);
             } else {
@@ -177,7 +177,7 @@ export class AuthManager {
                   </body>
                 </html>
               `);
-              
+
               server.close();
               reject(new Error('Authentication failed'));
             }
@@ -200,10 +200,13 @@ export class AuthManager {
       });
 
       // Timeout after 5 minutes
-      setTimeout(() => {
-        server.close();
-        reject(new Error('Authentication timeout'));
-      }, 5 * 60 * 1000);
+      setTimeout(
+        () => {
+          server.close();
+          reject(new Error('Authentication timeout'));
+        },
+        5 * 60 * 1000
+      );
     });
   }
 }

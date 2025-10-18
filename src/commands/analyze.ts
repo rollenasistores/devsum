@@ -24,7 +24,7 @@ export const analyzeCommand = new Command('analyze')
   .option('-p, --provider <name>', 'Use specific AI provider by name')
   .option('--list-providers', 'List available AI providers and exit')
   .option('--list-models', 'List available models for configured providers and exit')
-  .action(async (options) => {
+  .action(async options => {
     // Import and execute the report command with the same options
     const { ReportCommand } = await import('./report.js');
     const reportCommandInstance = new ReportCommand();

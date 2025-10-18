@@ -192,14 +192,16 @@ export class ConfigManager {
 
     if (providerName) {
       const provider = config.providers.find(p => p.name === providerName);
-      
+
       // If it's a cloud provider, check authentication
       if (provider?.provider === 'devsum-cloud') {
         const isAuthenticated = await authManager.isAuthenticated();
         if (!isAuthenticated) {
-          throw new Error('Not authenticated. Please run "devsum login" to authenticate with DevSum Cloud.');
+          throw new Error(
+            'Not authenticated. Please run "devsum login" to authenticate with DevSum Cloud.'
+          );
         }
-        
+
         // Update provider with current auth token
         const authToken = await authManager.getAuthToken();
         if (authToken) {
@@ -209,20 +211,22 @@ export class ConfigManager {
           };
         }
       }
-      
+
       return provider || null;
     }
 
     // Return default provider
     const defaultProvider = config.providers.find(p => p.isDefault) || config.providers[0];
-    
+
     // If it's a cloud provider, check authentication
     if (defaultProvider?.provider === 'devsum-cloud') {
       const isAuthenticated = await authManager.isAuthenticated();
       if (!isAuthenticated) {
-        throw new Error('Not authenticated. Please run "devsum login" to authenticate with DevSum Cloud.');
+        throw new Error(
+          'Not authenticated. Please run "devsum login" to authenticate with DevSum Cloud.'
+        );
       }
-      
+
       // Update provider with current auth token
       const authToken = await authManager.getAuthToken();
       if (authToken) {
@@ -232,7 +236,7 @@ export class ConfigManager {
         };
       }
     }
-    
+
     return defaultProvider || null;
   }
 
@@ -336,7 +340,7 @@ export class ConfigManager {
 
     // Check if cloud provider already exists
     const existingIndex = config.providers.findIndex(p => p.name === 'devsum-cloud');
-    
+
     if (existingIndex >= 0) {
       // Update existing cloud provider
       const updated = [...config.providers];

@@ -1,7 +1,7 @@
 {
   "name": "@rollenasistores/devsum",
-  "version": "1.7.1",
-  "description": "DevSum CLI uses AI to analyze your git history and generate polished accomplishment summaries. Perfect for performance reviews, sprint reports, and project updates.",
+  "version": "1.7.2",
+  "description": "DevSum CLI automates your Git workflow with AI-powered commit messages, smart branch management, and generates polished accomplishment summaries. Perfect for efficient development workflows, performance reviews, and sprint reports.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -58,7 +58,12 @@
     "sprint-report",
     "project-management",
     "code-review",
-    "development-summary"
+    "development-summary",
+    "commit-automation",
+    "branch-management",
+    "git-workflow",
+    "conventional-commits",
+    "workflow-automation"
   ],
   "author": {
     "name": "Rollen Asistores",

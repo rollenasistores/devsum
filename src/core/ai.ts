@@ -41,7 +41,7 @@ export class AIService {
     if (provider.provider === 'devsum-cloud') {
       return new CloudAIService(provider as CloudAIProvider);
     }
-    
+
     const model = provider.model ?? AIService.getDefaultModel(provider.provider);
     return new AIService(provider.provider, provider.apiKey, model);
   }

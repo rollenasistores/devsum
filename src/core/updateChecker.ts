@@ -261,7 +261,7 @@ export class UpdateChecker {
     try {
       const latest = this.parseVersion(latestVersion);
       const current = this.parseVersion(currentVersion);
-      
+
       // Critical if major version is different
       return latest.major > current.major;
     } catch {
@@ -273,7 +273,10 @@ export class UpdateChecker {
    * Parse version string into major.minor.patch
    */
   private parseVersion(version: string): { major: number; minor: number; patch: number } {
-    const parts = version.replace(/[^0-9.]/g, '').split('.').map(Number);
+    const parts = version
+      .replace(/[^0-9.]/g, '')
+      .split('.')
+      .map(Number);
     return {
       major: parts[0] || 0,
       minor: parts[1] || 0,
@@ -287,7 +290,7 @@ export class UpdateChecker {
   async checkForcedUpdate(): Promise<{ required: boolean; updateInfo?: UpdateInfo }> {
     try {
       const updateInfo = await this.forceCheckForUpdates();
-      
+
       if (updateInfo.criticalUpdate) {
         return { required: true, updateInfo };
       }
@@ -295,10 +298,11 @@ export class UpdateChecker {
       // Check if user is more than 2 minor versions behind
       const latest = this.parseVersion(updateInfo.latestVersion || '0.0.0');
       const current = this.parseVersion(this.currentVersion);
-      
-      const isSignificantlyBehind = latest.major > current.major || 
+
+      const isSignificantlyBehind =
+        latest.major > current.major ||
         (latest.major === current.major && latest.minor > current.minor + 1);
-      
+
       if (isSignificantlyBehind) {
         return { required: true, updateInfo };
       }

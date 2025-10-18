@@ -15,14 +15,16 @@ export class ForcedUpdate {
   async checkAndEnforce(): Promise<boolean> {
     try {
       // Check for bypass environment variable
-      if (process.env.DEVSUM_SKIP_UPDATE_CHECK === 'true' || 
-          process.env.CI === 'true' || 
-          process.env.NODE_ENV === 'test') {
+      if (
+        process.env.DEVSUM_SKIP_UPDATE_CHECK === 'true' ||
+        process.env.CI === 'true' ||
+        process.env.NODE_ENV === 'test'
+      ) {
         return true; // Skip forced update checks in CI/test environments
       }
 
       const { required, updateInfo } = await this.updateChecker.checkForcedUpdate();
-      
+
       if (!required || !updateInfo) {
         return true; // No forced update required, continue
       }
@@ -42,7 +44,9 @@ export class ForcedUpdate {
     console.clear();
     console.log(chalk.red.bold('🚨 CRITICAL UPDATE REQUIRED'));
     console.log();
-    console.log(chalk.yellow('Your DevSum CLI is significantly outdated and must be updated to continue.'));
+    console.log(
+      chalk.yellow('Your DevSum CLI is significantly outdated and must be updated to continue.')
+    );
     console.log();
     console.log(chalk.white(`Current version: ${chalk.red(updateInfo.currentVersion)}`));
     console.log(chalk.white(`Latest version:  ${chalk.green(updateInfo.latestVersion)}`));
@@ -50,7 +54,9 @@ export class ForcedUpdate {
 
     if (updateInfo.criticalUpdate) {
       console.log(chalk.red.bold('⚠️  CRITICAL UPDATE DETECTED'));
-      console.log(chalk.yellow('This is a major version update with breaking changes and security fixes.'));
+      console.log(
+        chalk.yellow('This is a major version update with breaking changes and security fixes.')
+      );
       console.log();
     } else {
       console.log(chalk.yellow.bold('📦 SIGNIFICANT UPDATE DETECTED'));
@@ -80,7 +86,7 @@ export class ForcedUpdate {
   async checkForUpdates(): Promise<void> {
     try {
       const updateInfo = await this.updateChecker.checkForUpdates();
-      
+
       if (updateInfo?.hasUpdate && !updateInfo.criticalUpdate) {
         this.displayUpdateAvailable(updateInfo);
       }

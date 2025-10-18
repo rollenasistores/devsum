@@ -1,4 +1,9 @@
-import { CloudAIProvider, AIResponse, StagedChanges, CommitMessageOptions } from '../types/index.js';
+import {
+  CloudAIProvider,
+  AIResponse,
+  StagedChanges,
+  CommitMessageOptions,
+} from '../types/index.js';
 
 /**
  * Cloud AI Service for proxying requests through backend API
@@ -21,7 +26,7 @@ export class CloudAIService {
     length: string = 'detailed'
   ): Promise<AIResponse> {
     const prompt = this.buildReportPrompt(commits, length);
-    
+
     const response = await this.makeRequest({
       provider: 'gemini', // Default to Gemini for reports
       operation: 'generateReport',
@@ -40,7 +45,7 @@ export class CloudAIService {
     options: CommitMessageOptions
   ): Promise<string> {
     const prompt = this.buildCommitPrompt(changes, options);
-    
+
     const response = await this.makeRequest({
       provider: 'gemini', // Default to Gemini for commits
       operation: 'generateCommit',
@@ -56,7 +61,7 @@ export class CloudAIService {
    */
   public async generateBranchName(changes: StagedChanges): Promise<string> {
     const prompt = this.buildBranchNamePrompt(changes);
-    
+
     const response = await this.makeRequest({
       provider: 'gemini',
       operation: 'generateBranchName',
@@ -71,7 +76,7 @@ export class CloudAIService {
    */
   public async generatePullRequestTitle(changes: StagedChanges): Promise<string> {
     const prompt = this.buildPullRequestTitlePrompt(changes);
-    
+
     const response = await this.makeRequest({
       provider: 'gemini',
       operation: 'generatePullRequestTitle',
@@ -90,7 +95,7 @@ export class CloudAIService {
     options: CommitMessageOptions
   ): Promise<string> {
     const prompt = this.buildDetailedCommitPrompt(changes, diffContent, options);
-    
+
     const response = await this.makeRequest({
       provider: 'gemini',
       operation: 'generateCommit',
@@ -110,7 +115,7 @@ export class CloudAIService {
     originalName: string
   ): Promise<string> {
     const prompt = this.buildAlternativeBranchNamePrompt(changes, existingBranches, originalName);
-    
+
     const response = await this.makeRequest({
       provider: 'gemini',
       operation: 'generateBranchName',
@@ -128,7 +133,7 @@ export class CloudAIService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.authToken}`,
+        Authorization: `Bearer ${this.authToken}`,
       },
       body: JSON.stringify(requestData),
     });

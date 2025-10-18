@@ -21,9 +21,9 @@ export class UpdateCommand {
    * Execute the update command
    */
   public async execute(options: { checkOnly?: boolean }): Promise<void> {
-    const startTime = Date.now()
-    let success = false
-    let metadata: any = {}
+    const startTime = Date.now();
+    let success = false;
+    let metadata: any = {};
 
     try {
       console.log(chalk.blue('🔍 Checking for DevSum updates...'));
@@ -41,28 +41,28 @@ export class UpdateCommand {
         console.log();
         console.log(chalk.yellow('💡 Run the update command above to get the latest features!'));
       }
-      
-      success = true
+
+      success = true;
     } catch (error) {
       this.displayUpdateError(error);
-      success = false
+      success = false;
       process.exit(1);
     }
 
     // Track usage after execution
-    const duration = Date.now() - startTime
+    const duration = Date.now() - startTime;
     metadata = {
       duration,
       command: 'update',
-      checkOnly: options.checkOnly || false
-    }
+      checkOnly: options.checkOnly || false,
+    };
 
     await usageTracker.trackUsage({
       commandType: 'commit', // Use commit as the closest match for update
       userId: await usageTracker.getUserId(),
       success,
-      metadata
-    })
+      metadata,
+    });
   }
 
   /**

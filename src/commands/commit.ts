@@ -37,9 +37,9 @@ export class CommitCommand {
       noAuto?: boolean;
     }
   ): Promise<void> {
-    const startTime = Date.now()
-    let success = false
-    let metadata: any = {}
+    const startTime = Date.now();
+    let success = false;
+    let metadata: any = {};
 
     try {
       // Enable auto mode by default unless --no-auto is specified
@@ -51,28 +51,28 @@ export class CommitCommand {
       };
 
       await this.processor.processCommit(autoOptions);
-      success = true
+      success = true;
     } catch (error) {
-      success = false
-      throw error
+      success = false;
+      throw error;
     }
 
     // Track usage after execution
-    const duration = Date.now() - startTime
+    const duration = Date.now() - startTime;
     metadata = {
       duration,
       provider: options.provider,
       dryRun: options.dryRun,
       auto: options.auto,
-      conventional: options.conventional
-    }
+      conventional: options.conventional,
+    };
 
     await usageTracker.trackUsage({
       commandType: 'commit',
       userId: await usageTracker.getUserId(),
       success,
-      metadata
-    })
+      metadata,
+    });
   }
 }
 

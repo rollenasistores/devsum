@@ -41,7 +41,7 @@ export default {
     '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
     '@typescript-eslint/consistent-type-imports': 'error',
     '@typescript-eslint/no-import-type-side-effects': 'error',
-    
+
     // General rules
     'no-console': 'off', // CLI tool needs console
     'no-process-exit': 'off', // CLI tool needs process.exit
@@ -56,23 +56,16 @@ export default {
     'object-curly-spacing': ['error', 'always'],
     'array-bracket-spacing': ['error', 'never'],
     'comma-dangle': ['error', 'always-multiline'],
-    'quotes': ['error', 'single', { avoidEscape: true }],
-    'semi': ['error', 'always'],
-    'indent': ['error', 2, { SwitchCase: 1 }],
+    quotes: ['error', 'single', { avoidEscape: true }],
+    semi: ['error', 'always'],
+    indent: ['error', 2, { SwitchCase: 1 }],
     'max-len': ['error', { code: 100, ignoreUrls: true, ignoreStrings: true }],
-    
+
     // Import rules
     'import/order': [
       'error',
       {
-        groups: [
-          'builtin',
-          'external',
-          'internal',
-          'parent',
-          'sibling',
-          'index',
-        ],
+        groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
         'newlines-between': 'always',
         alphabetize: {
           order: 'asc',
@@ -84,7 +77,7 @@ export default {
     'import/no-cycle': 'error',
     'import/no-self-import': 'error',
     'import/no-useless-path-segments': 'error',
-    
+
     // Node.js rules
     'node/no-missing-import': 'off', // Handled by TypeScript
     'node/no-unsupported-features/es-syntax': 'off', // Handled by TypeScript
@@ -102,10 +95,5 @@ export default {
       },
     },
   },
-  ignorePatterns: [
-    'dist/',
-    'node_modules/',
-    '*.js',
-    '*.d.ts',
-  ],
+  ignorePatterns: ['dist/', 'node_modules/', '*.js', '*.d.ts'],
 };

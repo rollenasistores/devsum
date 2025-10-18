@@ -11,9 +11,11 @@
 ╚═════╝ ╚══════╝  ╚═══╝  ╚══════╝ ╚═════╝ ╚═╝     ╚═╝
 ```
 
-**AI-Powered Git Accomplishment Reports**
+**AI-Powered Git Workflow Automation & Reports**
 
-_DevSum CLI uses AI to analyze your git history and generate polished accomplishment summaries. Perfect for performance reviews, sprint reports, and project updates._
+_DevSum CLI automates your Git workflow with AI-powered commit messages, smart
+branch management, and generates polished accomplishment summaries. Perfect for
+efficient development workflows, performance reviews, and sprint reports._
 
 [![npm version](https://badge.fury.io/js/@rollenasistores%2Fdevsum.svg)](https://badge.fury.io/js/@rollenasistores%2Fdevsum.svg)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -28,33 +30,49 @@ _DevSum CLI uses AI to analyze your git history and generate polished accomplish
 
 ---
 
-## Everything you need to summarize your work
+## Everything you need to automate your Git workflow
 
 Powerful features designed for developers who value their time
 
-### AI-Powered Analysis
+### Smart Commit Messages
 
-Leverage Claude, GPT-4, or Gemini to transform raw commits into professional narratives.
+AI generates conventional commit messages (feat:, fix:, docs:) with detailed
+descriptions of your changes. Never write boring commit messages again.
 
-### Multiple Formats
+### Branch Automation
 
-Export to Markdown, JSON, HTML, or PDF. Perfect for any workflow or documentation system.
-
-### Flexible Filtering
-
-Filter by date range, author, branch, or file patterns. Get exactly the commits you need.
-
-### Lightning Fast
-
-Optimized performance with caching and parallel processing. Analyze thousands of commits in seconds.
+Auto-generate branch names, easy switching, and conflict prevention. Create
+feature branches with proper naming conventions automatically.
 
 ### Automated Workflows
 
-Integrate with CI/CD pipelines. Generate reports automatically on schedule or trigger.
+Full automation: add files, commit, push, and generate reports. Integrate with
+CI/CD pipelines seamlessly.
+
+### AI-Powered Analysis
+
+Leverage Claude, GPT-4, or Gemini to transform raw commits into professional
+narratives.
+
+### Multiple Formats
+
+Export to Markdown, JSON, HTML, or PDF. Perfect for any workflow or
+documentation system.
+
+### Flexible Filtering
+
+Filter by date range, author, branch, or file patterns. Get exactly the commits
+you need.
+
+### Lightning Fast
+
+Optimized performance with caching and parallel processing. Analyze thousands of
+commits in seconds.
 
 ### Beautiful Terminal UI
 
-Enjoy a polished CLI experience with progress indicators, colors, and interactive prompts.
+Enjoy a polished CLI experience with progress indicators, colors, and
+interactive prompts.
 
 ## Get started in seconds
 
@@ -66,9 +84,9 @@ npm install -g @rollenasistores/devsum
 
 ### Requirements
 
-* Node.js 18.0 or higher
-* Git 2.0 or higher
-* API key for your preferred AI provider (Claude, OpenAI, or Gemini)
+- Node.js 18.0 or higher
+- Git 2.0 or higher
+- API key for your preferred AI provider (Claude, OpenAI, or Gemini)
 
 ## Simple, powerful commands
 
@@ -106,7 +124,8 @@ DevSum works with the leading AI models
 
 **claude-3-5-sonnet**
 
-Anthropic's most capable model. Excellent at understanding context and generating professional narratives.
+Anthropic's most capable model. Excellent at understanding context and
+generating professional narratives.
 
 - Best quality
 - Context-aware
@@ -116,7 +135,8 @@ Anthropic's most capable model. Excellent at understanding context and generatin
 
 **gpt-4-turbo**
 
-OpenAI's flagship model. Great balance of speed and quality with strong technical understanding.
+OpenAI's flagship model. Great balance of speed and quality with strong
+technical understanding.
 
 - Fast
 - Reliable
@@ -126,7 +146,8 @@ OpenAI's flagship model. Great balance of speed and quality with strong technica
 
 **gemini-pro**
 
-Google's advanced AI model. Cost-effective option with good performance for most use cases.
+Google's advanced AI model. Cost-effective option with good performance for most
+use cases.
 
 - Cost-effective
 - Fast
@@ -164,21 +185,25 @@ See what DevSum can generate for you
 ## Key Accomplishments
 
 ### Feature Development
+
 - Implemented user authentication system with OAuth2 support
 - Built real-time notification system using WebSockets
 - Created responsive dashboard with data visualization
 
 ### Performance Improvements
+
 - Optimized database queries, reducing load time by 40%
 - Implemented Redis caching for frequently accessed data
 - Reduced bundle size by 25% through code splitting
 
 ### Bug Fixes & Maintenance
+
 - Fixed 12 critical bugs reported by users
 - Improved error handling and logging
 - Updated dependencies and resolved security vulnerabilities
 
 ## Metrics
+
 - **Commits**: 47
 - **Files Changed**: 156
 - **Lines Added**: 3,421
@@ -197,17 +222,20 @@ Real-time insights into DevSum CLI usage
 
 Join thousands of developers using DevSum
 
-"DevSum has saved me hours every sprint. The AI summaries are incredibly accurate and professional."
+"DevSum has saved me hours every sprint. The AI summaries are incredibly
+accurate and professional."
 
 **Sarah Chen**  
 Senior Engineer at TechCorp
 
-"Perfect for performance reviews. I can now showcase my work with detailed, well-formatted reports."
+"Perfect for performance reviews. I can now showcase my work with detailed,
+well-formatted reports."
 
 **Michael Rodriguez**  
 Full Stack Developer
 
-"The best CLI tool I've used this year. Simple, powerful, and beautifully designed."
+"The best CLI tool I've used this year. Simple, powerful, and beautifully
+designed."
 
 **Emily Watson**  
 Engineering Manager
@@ -398,21 +426,25 @@ devsum analyze --since 7d --output ./reports/weekly-team-report.md
 ## Key Accomplishments
 
 ### Feature Development
+
 - Implemented user authentication system with OAuth2 support
 - Built real-time notification system using WebSockets
 - Created responsive dashboard with data visualization
 
 ### Performance Improvements
+
 - Optimized database queries, reducing load time by 40%
 - Implemented Redis caching for frequently accessed data
 - Reduced bundle size by 25% through code splitting
 
 ### Bug Fixes & Maintenance
+
 - Fixed 12 critical bugs reported by users
 - Improved error handling and logging
 - Updated dependencies and resolved security vulnerabilities
 
 ## Metrics
+
 - **Commits**: 47
 - **Files Changed**: 156
 - **Lines Added**: 3,421
@@ -566,7 +598,8 @@ This project is licensed under the **Apache License 2.0** - see the
 - 💬 **Discussions:**
   [GitHub Discussions](https://github.com/rollenasistores/devsum/discussions)
 - 📧 **Email:** asistoresrlc1@gmail.com
-- 🌐 **Website:** [devsum.rollenasistores.site](http://devsum.rollenasistores.site/)
+- 🌐 **Website:**
+  [devsum.rollenasistores.site](http://devsum.rollenasistores.site/)
 
 ## 🗺️ Roadmap
 

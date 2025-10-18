@@ -28,20 +28,20 @@ export class AnalyticsCommand {
       export?: string;
     }
   ): Promise<void> {
-    const startTime = Date.now()
-    let success = false
-    let metadata: any = {}
+    const startTime = Date.now();
+    let success = false;
+    let metadata: any = {};
 
     try {
       await this.processor.processAnalytics(options);
-      success = true
+      success = true;
     } catch (error) {
-      success = false
-      throw error
+      success = false;
+      throw error;
     }
 
     // Track usage after execution
-    const duration = Date.now() - startTime
+    const duration = Date.now() - startTime;
     metadata = {
       duration,
       provider: options.provider,
@@ -49,15 +49,15 @@ export class AnalyticsCommand {
       focus: options.focus,
       compare: options.compare,
       interactive: options.interactive,
-      export: options.export
-    }
+      export: options.export,
+    };
 
     await usageTracker.trackUsage({
       commandType: 'analyze',
       userId: await usageTracker.getUserId(),
       success,
-      metadata
-    })
+      metadata,
+    });
   }
 }
 

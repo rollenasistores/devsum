@@ -1,8 +1,8 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. See
-[standard-version](https://github.com/conventional-changelog/standard-version)
-for commit guidelines.
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### [1.7.4](https://github.com/rollenasistores/devsum/compare/v1.7.1...v1.7.4) (2025-10-18)
 
 ### [1.7.1](https://github.com/rollenasistores/devsum/compare/v1.5.4...v1.7.1) (2025-10-17)
 

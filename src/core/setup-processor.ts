@@ -1,10 +1,15 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import { configManager } from './config.js';
-import { Config, AIProvider } from '../types/index.js';
+import { Config, AIProvider, AIProviderType } from '../types/index.js';
 import { getVersion } from '../utils/version.js';
 import { AIService } from './ai.js';
 import { authManager } from './auth.js';
+
+/**
+ * Action types for setup operations
+ */
+type ActionType = 'add' | 'edit' | 'remove' | 'default' | 'reset' | 'cancel';
 
 /**
  * Service responsible for processing setup operations
@@ -29,7 +34,7 @@ export class SetupProcessor {
 
       const existingConfig = await configManager.loadConfig();
       let config: Config;
-      let action: string | undefined;
+      let action: ActionType | undefined;
 
       if (existingConfig) {
         this.displayExistingConfig(existingConfig);
@@ -135,7 +140,7 @@ export class SetupProcessor {
   /**
    * Get user action choice
    */
-  private async getUserAction(): Promise<string> {
+  private async getUserAction(): Promise<ActionType> {
     const actionResult = await inquirer.prompt([
       {
         type: 'list',
@@ -332,10 +337,11 @@ export class SetupProcessor {
       },
     ]);
 
-    this.displayProviderInfo(answers.provider);
+    const provider = answers.provider as AIProviderType;
+    this.displayProviderInfo(provider);
 
     // Handle cloud provider differently
-    if (answers.provider === 'devsum-cloud') {
+    if (provider === 'devsum-cloud') {
       return await this.setupCloudProviderInteractive(answers.name);
     }
 
@@ -344,7 +350,7 @@ export class SetupProcessor {
         type: 'password',
         name: 'apiKey',
         message: '🔑 Enter your API key:',
-        validate: input => this.validateApiKey(input, answers.provider),
+        validate: input => this.validateApiKey(input, provider),
       },
     ]);
 
@@ -353,7 +359,7 @@ export class SetupProcessor {
     console.log(chalk.blue('🔍 Fetching available models...'));
 
     const availableModels = await AIService.fetchAvailableModels(
-      answers.provider,
+      provider,
       configAnswers.apiKey
     );
 
@@ -376,11 +382,11 @@ export class SetupProcessor {
               }))
             : [
                 {
-                  name: AIService.getDefaultModel(answers.provider) + ' (default)',
-                  value: AIService.getDefaultModel(answers.provider),
+                  name: AIService.getDefaultModel(provider) + ' (default)',
+                  value: AIService.getDefaultModel(provider),
                 },
               ],
-        default: AIService.getDefaultModel(answers.provider),
+        default: AIService.getDefaultModel(provider),
       },
       {
         type: 'confirm',
@@ -392,7 +398,7 @@ export class SetupProcessor {
 
     return {
       name: answers.name,
-      provider: answers.provider,
+      provider: provider,
       apiKey: configAnswers.apiKey,
       model: modelAnswers.model,
       isDefault: modelAnswers.isDefault,
@@ -402,7 +408,7 @@ export class SetupProcessor {
   /**
    * Display provider information
    */
-  private displayProviderInfo(provider: string): void {
+  private displayProviderInfo(provider: AIProviderType): void {
     console.log();
     console.log(chalk.blue('═'.repeat(60)));
 
@@ -437,7 +443,7 @@ export class SetupProcessor {
   /**
    * Validate API key
    */
-  private validateApiKey(apiKey: string, provider: string): boolean | string {
+  private validateApiKey(apiKey: string, provider: AIProviderType): boolean | string {
     if (!apiKey.trim()) {
       return '❌ API key is required';
     }

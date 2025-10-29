@@ -67,12 +67,6 @@ export class CommitCommand {
       conventional: options.conventional,
     };
 
-    console.log();
-    if (options.dryRun) {
-      console.log('🔍 [DEBUG] Dry-run mode detected - telemetry will still be tracked');
-    }
-    console.log('📊 Tracking usage analytics...');
-    
     await usageTracker.trackUsage({
       commandType: 'commit',
       userId: await usageTracker.getUserId(),

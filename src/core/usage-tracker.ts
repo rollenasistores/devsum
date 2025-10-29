@@ -36,7 +36,7 @@ interface SystemInfo {
 export class UsageTracker {
   private config: UsageConfig;
   private configPath: string;
-  private readonly API_ENDPOINT = 'http://devsum.rollenasistores.site/api/usage/track';
+  private readonly API_ENDPOINT = 'https://devsum.rollenasistores.site/api/usage/track';
 
   constructor() {
     this.configPath = join(homedir(), '.devsum', 'usage-config.json');
@@ -136,18 +136,6 @@ export class UsageTracker {
         metadata: enhancedMetadata,
       };
 
-      // Debug logging
-      console.log('🔍 [DEBUG] Tracking usage:', {
-        endpoint: this.API_ENDPOINT,
-        method: 'POST',
-        payload: {
-          commandType: payload.commandType,
-          userId: payload.userId,
-          success: payload.success,
-          metadataKeys: Object.keys(payload.metadata || {}),
-        },
-      });
-
       const response = await fetch(this.API_ENDPOINT, {
         method: 'POST',
         headers: {
@@ -157,12 +145,6 @@ export class UsageTracker {
           'X-Locale': systemInfo.locale,
         },
         body: JSON.stringify(payload),
-      });
-
-      console.log('🔍 [DEBUG] Response received:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
       });
 
       if (!response.ok) {

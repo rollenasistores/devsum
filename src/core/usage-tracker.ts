@@ -136,6 +136,18 @@ export class UsageTracker {
         metadata: enhancedMetadata,
       };
 
+      // Debug logging
+      console.log('🔍 [DEBUG] Tracking usage:', {
+        endpoint: this.API_ENDPOINT,
+        method: 'POST',
+        payload: {
+          commandType: payload.commandType,
+          userId: payload.userId,
+          success: payload.success,
+          metadataKeys: Object.keys(payload.metadata || {}),
+        },
+      });
+
       const response = await fetch(this.API_ENDPOINT, {
         method: 'POST',
         headers: {
@@ -147,12 +159,28 @@ export class UsageTracker {
         body: JSON.stringify(payload),
       });
 
+      console.log('🔍 [DEBUG] Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+      });
+
       if (!response.ok) {
-        console.warn('Failed to track usage:', response.statusText);
+        const errorText = await response.text().catch(() => 'No error details');
+        console.warn('⚠️  Failed to track usage:', {
+          status: response.status,
+          statusText: response.statusText,
+          endpoint: this.API_ENDPOINT,
+          error: errorText,
+        });
       }
     } catch (error) {
       // Silently fail - don't interrupt user workflow
-      console.warn('Usage tracking failed:', error);
+      console.warn('⚠️  Usage tracking failed:', {
+        error: error instanceof Error ? error.message : String(error),
+        endpoint: this.API_ENDPOINT,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
     }
   }
 

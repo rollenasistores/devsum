@@ -1,6 +1,6 @@
 {
   "name": "@rollenasistores/devsum",
-  "version": "1.7.5",
+  "version": "1.7.6",
   "description": "DevSum CLI automates your Git workflow with AI-powered commit messages, smart branch management, and generates polished accomplishment summaries. Perfect for efficient development workflows, performance reviews, and sprint reports.",
   "type": "module",
   "main": "dist/index.js",

@@ -358,10 +358,7 @@ export class SetupProcessor {
     console.log();
     console.log(chalk.blue('🔍 Fetching available models...'));
 
-    const availableModels = await AIService.fetchAvailableModels(
-      provider,
-      configAnswers.apiKey
-    );
+    const availableModels = await AIService.fetchAvailableModels(provider, configAnswers.apiKey);
 
     if (availableModels.length === 0) {
       console.log(chalk.yellow('⚠️  Could not fetch models, using defaults'));

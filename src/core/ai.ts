@@ -24,11 +24,13 @@ export class AIService {
   private readonly provider: AIProviderType;
   private readonly apiKey: string;
   private readonly model: string;
+  private readonly baseUrl?: string;
 
-  private constructor(provider: AIProviderType, apiKey: string, model: string) {
+  private constructor(provider: AIProviderType, apiKey: string, model: string, baseUrl?: string) {
     this.provider = provider;
     this.apiKey = apiKey;
     this.model = model;
+    this.baseUrl = baseUrl;
 
     this.initializeClients();
   }
@@ -43,7 +45,7 @@ export class AIService {
     }
 
     const model = provider.model ?? AIService.getDefaultModel(provider.provider);
-    return new AIService(provider.provider, provider.apiKey, model);
+    return new AIService(provider.provider, provider.apiKey, model, provider.baseUrl);
   }
 
   /**
@@ -59,6 +61,9 @@ export class AIService {
         break;
       case 'openai':
         this.openaiClient = new OpenAI({ apiKey: this.apiKey });
+        break;
+      case 'ollama':
+        // Ollama uses direct HTTP requests, no SDK client needed
         break;
       default:
         throw new Error(`Unsupported AI provider: ${this.provider}`);
@@ -168,6 +173,8 @@ export class AIService {
         return await this.generateWithClaude(prompt);
       case 'openai':
         return await this.generateWithOpenAI(prompt);
+      case 'ollama':
+        return await this.generateWithOllama(prompt);
       default:
         throw new Error(`Unsupported provider: ${this.provider}`);
     }
@@ -184,6 +191,8 @@ export class AIService {
         return await this.generateCommitWithClaude(prompt);
       case 'openai':
         return await this.generateCommitWithOpenAI(prompt);
+      case 'ollama':
+        return await this.generateCommitWithOllama(prompt);
       default:
         throw new Error(`Unsupported provider: ${this.provider}`);
     }
@@ -200,6 +209,8 @@ export class AIService {
         return await this.generateBranchNameWithClaude(prompt);
       case 'openai':
         return await this.generateBranchNameWithOpenAI(prompt);
+      case 'ollama':
+        return await this.generateBranchNameWithOllama(prompt);
       default:
         throw new Error(`Unsupported provider: ${this.provider}`);
     }
@@ -216,6 +227,8 @@ export class AIService {
         return await this.generatePullRequestTitleWithClaude(prompt);
       case 'openai':
         return await this.generatePullRequestTitleWithOpenAI(prompt);
+      case 'ollama':
+        return await this.generatePullRequestTitleWithOllama(prompt);
       default:
         throw new Error(`Unsupported provider: ${this.provider}`);
     }
@@ -292,6 +305,41 @@ export class AIService {
 
     const text = response.choices[0]?.message?.content || '';
     return this.parseResponse(text);
+  }
+
+  private async generateWithOllama(prompt: string): Promise<AIResponse> {
+    const baseUrl = this.baseUrl || 'http://localhost:11434';
+    const model = this.model || 'phi3:mini';
+
+    try {
+      const response = await fetch(`${baseUrl}/api/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          prompt,
+          stream: false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const text = data.response || '';
+
+      return this.parseResponse(text);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('fetch')) {
+        throw new Error(
+          `Failed to connect to Ollama at ${baseUrl}. Make sure Ollama is running.`
+        );
+      }
+      throw error;
+    }
   }
 
   /**
@@ -471,6 +519,17 @@ Focus on the impact and value of the changes rather than just listing commits. G
         'claude-3-opus-20240229',
       ] as const,
       openai: ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo'] as const,
+      ollama: [
+        'phi3:mini',
+        'llama3.2:1b',
+        'llama3.2:3b',
+        'gemma2:2b',
+        'tinyllama',
+        'llama3.2',
+        'llama3',
+        'mistral',
+        'codellama',
+      ] as const,
       'devsum-cloud': ['gemini-2.0-flash', 'claude-3-5-sonnet-20241022', 'gpt-4'] as const,
     };
 
@@ -482,7 +541,8 @@ Focus on the impact and value of the changes rather than just listing commits. G
    */
   public static async fetchAvailableModels(
     provider: AIProviderType,
-    apiKey: string
+    apiKey: string,
+    baseUrl?: string
   ): Promise<readonly string[]> {
     try {
       switch (provider) {
@@ -492,6 +552,8 @@ Focus on the impact and value of the changes rather than just listing commits. G
           return await AIService.fetchClaudeModels(apiKey);
         case 'openai':
           return await AIService.fetchOpenAIModels(apiKey);
+        case 'ollama':
+          return await AIService.fetchOllamaModels(baseUrl || 'http://localhost:11434');
         default:
           return [];
       }
@@ -623,6 +685,34 @@ Focus on the impact and value of the changes rather than just listing commits. G
   }
 
   /**
+   * Fetch available Ollama models
+   */
+  public static async fetchOllamaModels(baseUrl: string): Promise<readonly string[]> {
+    try {
+      const response = await fetch(`${baseUrl}/api/tags`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const models = (data.models || [])
+        .map((model: any) => model.name || model.model)
+        .filter((name: string) => name)
+        .sort();
+
+      return models.length > 0 ? [...models] : AIService.getAvailableModels('ollama');
+    } catch (error) {
+      return AIService.getAvailableModels('ollama');
+    }
+  }
+
+  /**
    * Get default model for a provider
    */
   public static getDefaultModel(provider: AIProviderType): string {
@@ -630,6 +720,7 @@ Focus on the impact and value of the changes rather than just listing commits. G
       gemini: 'gemini-2.0-flash',
       claude: 'claude-3-5-sonnet-20241022',
       openai: 'gpt-4',
+      ollama: 'phi3:mini',
       'devsum-cloud': 'gemini-2.0-flash',
     } as const;
 
@@ -697,6 +788,41 @@ Focus on the impact and value of the changes rather than just listing commits. G
 
     const text = response.choices[0]?.message?.content || '';
     return this.parseCommitResponse(text);
+  }
+
+  private async generateCommitWithOllama(prompt: string): Promise<string> {
+    const baseUrl = this.baseUrl || 'http://localhost:11434';
+    const model = this.model || 'phi3:mini';
+
+    try {
+      const response = await fetch(`${baseUrl}/api/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          prompt,
+          stream: false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const text = data.response || '';
+
+      return this.parseCommitResponse(text);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('fetch')) {
+        throw new Error(
+          `Failed to connect to Ollama at ${baseUrl}. Make sure Ollama is running.`
+        );
+      }
+      throw error;
+    }
   }
 
   private buildCommitPrompt(changes: StagedChanges, options: CommitMessageOptions): string {
@@ -1032,6 +1158,41 @@ Generate only the commit message as a bulleted list, no additional text:`;
     return this.parseBranchNameResponse(text);
   }
 
+  private async generateBranchNameWithOllama(prompt: string): Promise<string> {
+    const baseUrl = this.baseUrl || 'http://localhost:11434';
+    const model = this.model || 'phi3:mini';
+
+    try {
+      const response = await fetch(`${baseUrl}/api/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          prompt,
+          stream: false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const text = data.response || '';
+
+      return this.parseBranchNameResponse(text);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('fetch')) {
+        throw new Error(
+          `Failed to connect to Ollama at ${baseUrl}. Make sure Ollama is running.`
+        );
+      }
+      throw error;
+    }
+  }
+
   private buildBranchNamePrompt(changes: StagedChanges): string {
     // Build file summary
     const fileSummary = changes.stagedFiles
@@ -1268,6 +1429,41 @@ Generate only the pull request title, no additional text:`;
 
     const text = response.choices[0]?.message?.content || '';
     return this.parsePullRequestTitleResponse(text);
+  }
+
+  private async generatePullRequestTitleWithOllama(prompt: string): Promise<string> {
+    const baseUrl = this.baseUrl || 'http://localhost:11434';
+    const model = this.model || 'phi3:mini';
+
+    try {
+      const response = await fetch(`${baseUrl}/api/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          prompt,
+          stream: false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const text = data.response || '';
+
+      return this.parsePullRequestTitleResponse(text);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('fetch')) {
+        throw new Error(
+          `Failed to connect to Ollama at ${baseUrl}. Make sure Ollama is running.`
+        );
+      }
+      throw error;
+    }
   }
 
   private parsePullRequestTitleResponse(response: string): string {

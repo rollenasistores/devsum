@@ -330,6 +330,10 @@ export class SetupProcessor {
             value: 'openai',
           },
           {
+            name: chalk.yellow('🦙 Ollama (Local)') + chalk.gray(' - Run models locally'),
+            value: 'ollama',
+          },
+          {
             name: chalk.magenta('☁️  DevSum Cloud') + chalk.gray(' - No API keys needed'),
             value: 'devsum-cloud',
           },
@@ -345,6 +349,11 @@ export class SetupProcessor {
       return await this.setupCloudProviderInteractive(answers.name);
     }
 
+    // Handle Ollama provider differently (needs base URL instead of API key)
+    if (provider === 'ollama') {
+      return await this.setupOllamaProviderInteractive(answers.name);
+    }
+
     const configAnswers = await inquirer.prompt([
       {
         type: 'password',
@@ -358,7 +367,11 @@ export class SetupProcessor {
     console.log();
     console.log(chalk.blue('🔍 Fetching available models...'));
 
-    const availableModels = await AIService.fetchAvailableModels(provider, configAnswers.apiKey);
+    const availableModels = await AIService.fetchAvailableModels(
+      provider,
+      configAnswers.apiKey,
+      undefined
+    );
 
     if (availableModels.length === 0) {
       console.log(chalk.yellow('⚠️  Could not fetch models, using defaults'));
@@ -433,6 +446,15 @@ export class SetupProcessor {
       console.log(chalk.gray('   • API Key: https://platform.openai.com/api-keys'));
       console.log(chalk.gray('   • Models: Will fetch available models from your account'));
       console.log(chalk.gray('   • Usage: Pay-per-use pricing'));
+    } else if (provider === 'ollama') {
+      console.log(chalk.yellow.bold('🦙 Ollama Local LLM Configuration'));
+      console.log(chalk.gray('   Run AI models locally on your machine'));
+      console.log();
+      console.log(chalk.yellow('📋 Setup Requirements:'));
+      console.log(chalk.gray('   • Ollama installed: https://ollama.ai'));
+      console.log(chalk.gray('   • Ollama server running (default: http://localhost:11434)'));
+      console.log(chalk.gray('   • Models: Will fetch available models from your local Ollama'));
+      console.log(chalk.gray('   • Free: No API costs, runs entirely locally'));
     }
     console.log();
   }
@@ -473,6 +495,9 @@ export class SetupProcessor {
       if (apiKey.length < 40) {
         return '❌ OpenAI API key seems too short';
       }
+    } else if (provider === 'ollama' || provider === 'devsum-cloud') {
+      // Ollama and cloud providers don't use API keys in the traditional sense
+      return true;
     } else {
       // Generic validation for other providers
       if (apiKey.length < 10) {
@@ -585,6 +610,107 @@ export class SetupProcessor {
       config.defaultProvider = 'devsum-cloud';
       config.providers[0].isDefault = true;
     }
+  }
+
+  /**
+   * Setup Ollama provider interactively
+   */
+  private async setupOllamaProviderInteractive(name: string): Promise<AIProvider> {
+    console.log();
+    console.log(chalk.yellow('🦙 Setting up Ollama...'));
+
+    const ollamaAnswers = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'baseUrl',
+        message: '🌐 Ollama base URL:',
+        default: 'http://localhost:11434',
+        validate: input => {
+          if (!input.trim()) {
+            return '❌ Base URL is required';
+          }
+          try {
+            new URL(input);
+            return true;
+          } catch {
+            return '❌ Invalid URL format';
+          }
+        },
+      },
+    ]);
+
+    // Test connection and fetch available models
+    console.log();
+    console.log(chalk.blue('🔍 Testing connection and fetching available models...'));
+
+    let availableModels: readonly string[] = [];
+    try {
+      availableModels = await AIService.fetchOllamaModels(ollamaAnswers.baseUrl);
+      if (availableModels.length === 0) {
+        console.log(chalk.yellow('⚠️  No models found. Recommended for your system:'));
+        console.log(chalk.gray('   • phi3:mini (best balance, ~7.5GB RAM)'));
+        console.log(chalk.gray('   • llama3.2:1b (very lightweight, ~1GB RAM)'));
+        console.log(chalk.gray('   • gemma2:2b (lightweight, ~4GB RAM)'));
+        console.log(chalk.gray('   Run: ollama pull phi3:mini'));
+      } else {
+        console.log(chalk.green(`✅ Found ${availableModels.length} available models`));
+      }
+    } catch (error) {
+      console.log(chalk.yellow('⚠️  Could not connect to Ollama. Make sure Ollama is running.'));
+      console.log(chalk.gray(`   Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+    }
+
+    const modelAnswers = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'model',
+        message: '⚙️  Choose AI Model:',
+        choices:
+          availableModels.length > 0
+            ? availableModels.map(model => ({
+                name: model,
+                value: model,
+              }))
+            : [
+                {
+                  name: 'phi3:mini (recommended - lightweight, ~7.5GB RAM)',
+                  value: 'phi3:mini',
+                },
+                {
+                  name: 'llama3.2:1b (very lightweight, ~1GB RAM)',
+                  value: 'llama3.2:1b',
+                },
+                {
+                  name: 'llama3.2:3b (lightweight, ~3GB RAM)',
+                  value: 'llama3.2:3b',
+                },
+                {
+                  name: 'gemma2:2b (lightweight, ~4GB RAM)',
+                  value: 'gemma2:2b',
+                },
+                {
+                  name: 'tinyllama (lightest, ~0.6GB RAM)',
+                  value: 'tinyllama',
+                },
+              ],
+        default: availableModels.length > 0 ? availableModels[0] : 'phi3:mini',
+      },
+      {
+        type: 'confirm',
+        name: 'isDefault',
+        message: '⭐ Set as default provider?',
+        default: false,
+      },
+    ]);
+
+    return {
+      name,
+      provider: 'ollama',
+      apiKey: '', // Ollama doesn't need an API key
+      model: modelAnswers.model,
+      baseUrl: ollamaAnswers.baseUrl,
+      isDefault: modelAnswers.isDefault,
+    };
   }
 
   /**

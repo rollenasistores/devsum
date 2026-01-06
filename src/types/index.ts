@@ -8,6 +8,7 @@ export interface AIProvider {
   apiKey: string;
   model?: string;
   isDefault?: boolean;
+  baseUrl?: string; // For local LLMs like Ollama
 }
 
 /**
@@ -23,7 +24,7 @@ export interface CloudAIProvider extends AIProvider {
 /**
  * Supported AI provider types
  */
-export type AIProviderType = 'claude' | 'openai' | 'gemini' | 'devsum-cloud';
+export type AIProviderType = 'claude' | 'openai' | 'gemini' | 'devsum-cloud' | 'ollama';
 
 /**
  * Authentication configuration interface
